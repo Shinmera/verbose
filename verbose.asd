@@ -15,8 +15,12 @@
   :license "Artistic"
   :description "A logging library designed for use in Radiance."
   :serial T
-  :components ((:file "package.lisp")
-               (:file "documentation.lisp")
-               (:file "controller.lisp"))
+  :components ((:file "package")
+               (:file "controller"))
   :depends-on (:local-time
                :bordeaux-threads))
+
+(defsystem verbose-doc
+  :name "Verbose Doc"
+  :components ((:file "documentation"))
+  :depends-on (:verbose :lquery-doc))
