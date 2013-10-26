@@ -9,10 +9,8 @@
 (defvar *message-pipe* (make-array '(50) :adjustable T :fill-pointer 0))
 (defvar *message-lock* (make-lock "Message Lock"))
 
-(defclass controller ()
-  ((thread :accessor controller-thread)
-   (pipes :accessor pipes)
-   (endpoints :accessor endpoints))
+(defclass controller (source)
+  ((thread :accessor controller-thread))
   (:documentation "Main controller class that holds the logging construct."))
 
 (defmethod initialize-instance :after ((controller controller) &rest rest)
@@ -28,11 +26,7 @@
          (let ((length (length *message-pipe*)))
            (loop for i below length
               for message = (vector-pop *message-pipe*)
-              do (process-message message))))
+              do (pass (next *global-controller*) message))))
        (thread-yield)))
-
-(defun process-message (message)
-  (dolist (pipe (pipes *global-controller*))
-    ))
 
 (defvar *global-controller* (make-instance 'controller))

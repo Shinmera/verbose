@@ -17,7 +17,8 @@
   :serial T
   :components ((:file "package")
                (:file "controller"))
-  :depends-on (:local-time
+  :depends-on (:piping
+               :local-time
                :bordeaux-threads))
 
 (defsystem verbose-doc
