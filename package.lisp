@@ -7,4 +7,5 @@
 (defpackage org.tymoonnext.radiance.lib.verbose
   (:nicknames :verbose :v)
   (:use :cl :bordeaux-threads :piping)
+  (:shadow :log)
   (:export ))

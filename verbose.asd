@@ -16,7 +16,8 @@
   :description "A logging library designed for use in Radiance."
   :serial T
   :components ((:file "package")
-               (:file "controller"))
+               (:file "controller")
+               (:file "message"))
   :depends-on (:piping
                :local-time
                :bordeaux-threads))
