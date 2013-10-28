@@ -4,8 +4,9 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
+(in-package :cl)
 (defpackage org.tymoonnext.radiance.lib.verbose
   (:nicknames :verbose :v)
   (:use :cl :bordeaux-threads :piping)
-  (:shadow :log)
-  (:export ))
+  (:shadow LOG ERROR WARN DEBUG TRACE)
+  (:export :log :fatal :severe :error :warn :info :debug :trace))

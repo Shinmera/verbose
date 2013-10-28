@@ -22,8 +22,8 @@
 
 (defmethod print-object ((message message) stream)
   (print-unreadable-object (message stream)
-    (format stream "~a | [~5,a] <~a>: ~a" 
-            (local-time:format-timestring NIL (message-time message))
+    (format stream "~a [~5,a] <~a>: ~a"
+            (local-time:format-timestring NIL (message-time message) :format '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
             (message-level message)
             (message-category message)
             (message-content message))))
@@ -34,3 +34,10 @@
 (defun log (level category format-string &rest format-args)
   (log-message level category (apply #'format NIL format-string format-args)))
 
+(defmacro define-levels ()
+  `(progn
+     ,@(loop for level in '(FATAL SEVERE ERROR WARN INFO DEBUG TRACE)
+          collect `(defmacro ,level (category format-string &rest format-args)
+                     `(log ,,(intern (symbol-name level) "KEYWORD") ,category ,format-string ,@format-args)))))
+
+(define-levels)

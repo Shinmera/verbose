@@ -7,7 +7,7 @@
 (in-package :verbose)
 
 (defclass controller (pipeline)
-  ((source :initform ())
+  ((source :initarg :source :initform () :accessor source)
    (thread :accessor controller-thread)
    (message-condition :initform (make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
    (message-pipe :initform (make-array '(50) :adjustable T :fill-pointer 0) :reader message-pipe)
@@ -17,10 +17,11 @@
 (defmethod initialize-instance :after ((controller controller) &rest rest)
   (declare (ignore rest))
   
-  (let ((source (add-pipe controller 'source :name "SOURCE"))
-        (faucet (add-pipe controller 'print-faucet :name "PRINTER")))
-    (connect-next source faucet)
-    (setf (source controller) source))
+  (unless (source controller)
+    (let ((source (add-pipe controller 'source :name "SOURCE"))
+          (faucet (add-pipe controller 'print-faucet :name "PRINTER")))
+      (connect-next source faucet)
+      (setf (source controller) source)))
 
   (setf (controller-thread controller)
         (make-thread #'controller-loop :name "CONTROLLER MESSAGE LOOP"
@@ -47,5 +48,3 @@
     (vector-push-extend message (message-pipe controller)))
   (condition-notify (message-condition controller))
   NIL)
-
-(defvar *global-controller* (make-instance 'controller))
