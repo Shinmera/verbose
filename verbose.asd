@@ -17,10 +17,15 @@
   :serial T
   :components ((:file "package")
                (:file "controller")
-               (:file "message"))
+               (:file "message")
+               (:file "faucets")
+               (:file "default"))
   :depends-on (:piping
                :local-time
-               :bordeaux-threads))
+               :bordeaux-threads
+               :split-sequence
+               :cl-fad
+               :cl-cron))
 
 (defsystem verbose-doc
   :name "Verbose Doc"
