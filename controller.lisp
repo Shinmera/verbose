@@ -6,6 +6,8 @@
 
 (in-package :verbose)
 
+(defvar *global-controller* NIL)
+
 (defclass controller (pipeline)
   ((source :initarg :source :initform () :accessor source)
    (thread :accessor controller-thread)
