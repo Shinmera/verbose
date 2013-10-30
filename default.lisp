@@ -16,10 +16,13 @@
                               :test #'(lambda (message) (find (message-level message) curlist))
                               :next (make-instance 'splitter :name (symbol-name el))))))
 
-(defvar *global-controller* 
-  (make-instance 
-   'controller
-   :source (build-pipeline (make-instance 'source :name "SOURCE")
-             (valve :name "MAIN-VALVE")
-             (splitter :name "SPLITTER"
-                       :targets (build-default-outputs)))))
+(unless *global-controller*
+  (setf *global-controller*
+        (make-instance 
+         'controller
+         :source (build-pipeline (make-instance 'source :name "SOURCE")
+                   (valve :name "MAIN-VALVE")
+                   (splitter :name "SPLITTER"
+                             :targets (build-default-outputs)))))
+  (connect-new (get-pipe *global-controller* "INFO")
+               (make-instance 'repl-faucet)))
