@@ -16,7 +16,7 @@
                               :test #'(lambda (message) (find (message-level message) curlist))
                               :next (make-instance 'splitter :name (symbol-name el))))))
 
-(unless *global-controller*
+(defun make-standard-global-controller ()
   (setf *global-controller*
         (make-instance 
          'controller
@@ -25,4 +25,20 @@
                    (splitter :name "SPLITTER"
                              :targets (build-default-outputs)))))
   (connect-new (get-pipe *global-controller* "INFO")
-               (make-instance 'repl-faucet)))
+               (add-pipe *global-controller* 'repl-faucet :name "REPL")))
+
+(unless *global-controller*
+  (make-standard-global-controller))
+
+(defun attach-to (level pipe &key category filter (controller *global-controller*))
+  (when category
+    (setf pipe (make-instance 'filter :next pipe :test #'(lambda (message) (eq category (message-category message))))))
+  (when filter
+    (setf pipe (make-instance 'filter :next pipe :test filter)))
+  (connect-new (get-pipe controller (symbol-name level))
+               (add-pipe controller pipe)))
+
+(defun set-repl-level (level &key (faucet-name "REPL") (controller *global-controller*))
+  (let ((faucet (get-pipe controller faucet-name)))
+    (disconnect (prev faucet) faucet)
+    (connect-new (get-pipe controller (symbol-name level)) faucet)))
