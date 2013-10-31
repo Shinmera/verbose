@@ -8,6 +8,9 @@
 
 (defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 
+(defgeneric format-message (faucet message)
+  (:documentation "Wrapper around pass to potentially be overwritten if the output format should be changed."))
+
 (defclass repl-faucet (faucet)
   () (:documentation "A simple logging faucet that prints log messages to the *standard-output*"))
 
@@ -64,6 +67,12 @@
      :day-of-month (convert 'day-of-month)
      :month (convert 'month)
      :day-of-week (convert 'day-of-week))))
+
+(defgeneric rotate-log (rotating-log-faucet)
+  (:documentation "Create a new log file."))
+
+(defgeneric update-interval (rotating-log-faucet interval)
+  (:documentation "Change the rotation interval"))
 
 (defclass rotating-log-faucet (faucet)
   ((interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
