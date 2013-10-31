@@ -9,4 +9,10 @@
   (:nicknames :verbose :v)
   (:use :cl :bordeaux-threads :piping :split-sequence)
   (:shadow LOG ERROR WARN DEBUG TRACE)
-  (:export :log :fatal :severe :error :warn :info :debug :trace))
+  (:export :log :fatal :severe :error :warn :info :debug :trace
+           :controller :remove-global-controller :make-standard-global-controller
+           :attach-to :set-repl-level
+           :*repl-faucet-timestamp*
+           :repl-faucet :format-message
+           :cron-interval :make-cron-interval
+           :rotating-log-faucet :rotate-log :update-interval))
