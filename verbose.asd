@@ -10,7 +10,7 @@
 
 (defsystem verbose
   :name "Verbose"
-  :version "0.0.1"
+  :version "0.9.1"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
   :description "A logging library designed for use in Radiance."
