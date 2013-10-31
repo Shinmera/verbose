@@ -29,6 +29,10 @@
             (message-content message))))
 
 (defun log-message (level category content)
+  (assert (find level '(:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE)) (level)
+          "Level must be one of (:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE).")
+  (assert (keywordp category) (category)
+          "Category must be a keyword.")
   (log-object (make-instance 'message :level level :category category :content content)))
 
 (defun log (level category format-string &rest format-args)
