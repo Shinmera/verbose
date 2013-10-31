@@ -50,3 +50,7 @@
     (vector-push-extend message (message-pipe controller)))
   (condition-notify (message-condition controller))
   NIL)
+
+(defun remove-global-controller ()
+  (destroy-thread (controller-thread *global-controller*))
+  (setf *global-controller* NIL))
