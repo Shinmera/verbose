@@ -10,7 +10,7 @@
   (:use :cl :bordeaux-threads :piping :split-sequence)
   (:shadow LOG ERROR WARN DEBUG TRACE)
   (:export :log :fatal :severe :error :warn :info :debug :trace
-           :controller :remove-global-controller :make-standard-global-controller
+           :*global-controller* :controller :remove-global-controller :make-standard-global-controller
            :attach-to :set-repl-level
            :*repl-faucet-timestamp*
            :repl-faucet :format-message
