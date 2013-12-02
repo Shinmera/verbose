@@ -21,7 +21,7 @@
   (format-message faucet message))
 
 (defmethod format-message ((faucet repl-faucet) message)
-  (format T "LOG: ~a [~5,a] <~a>: ~a~%"
+  (format T "~&LOG: ~a [~5,a] <~a>: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
           (message-category message)
