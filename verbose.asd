@@ -18,7 +18,7 @@
   :components ((:file "package")
                (:file "controller")
                (:file "message")
-               (:file "faucets")
+               (:file "pipes")
                (:file "default"))
   :depends-on (:piping
                :local-time

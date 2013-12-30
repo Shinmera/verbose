@@ -120,3 +120,35 @@
   (if (cron-job faucet) (cl-cron:delete-cron-job (cron-job faucet)))
   (setf (interval faucet) interval
         (cron-job faucet) (start-cron-job interval #'(lambda () (rotate-log faucet)))))
+
+
+(defclass category-filter (filter)
+  ((categories :initarg :categories :initform T :accessor categories))
+  (:documentation "A simple pipe filter that only lets through matching categories."))
+
+(defmethod pass ((filter category-filter) (message message))
+  (if (or (eql (categories filter) T)
+          (find (message-category message) (categories filter)))
+      (pass (next filter) message)))
+
+(defclass category-tree-filter (category-filter) ()
+  (:documentation "A pipe filter that only lets messages through whose category matches by tree."))
+
+(defun %matching-tree-category (category filter)
+  (let ((category-leaves (split-sequence #\. (string-upcase category)))
+        (filter-leaves (split-sequence #\. (string-upcase filter))))
+    (loop for catl in category-leaves
+       for fill in filter-leaves
+       do (cond
+            ((or (string= catl "*")
+                 (string= fill "*"))
+             (return T))
+            ((not (string= catl fill))
+             (return NIL)))
+       finally (return (>= (length category-leaves)
+                           (length filter-leaves))))))
+
+(defmethod pass ((filter category-tree-filter) (message message))
+  (if (or (eql (categories filter) T)
+          (find (message-category message) (categories filter) :test #'%matching-tree-category))
+      (pass (next filter) message)))
