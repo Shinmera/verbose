@@ -52,5 +52,6 @@
   NIL)
 
 (defun remove-global-controller ()
-  (destroy-thread (controller-thread *global-controller*))
+  (when (thread-alive-p (controller-thread *global-controller*))
+    (destroy-thread (controller-thread *global-controller*)))
   (setf *global-controller* NIL))
