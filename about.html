@@ -17,7 +17,7 @@
   <body>
     <header>
       <img src="http://shinmera.tymoon.eu/public/verbose-logo.png" alt="Verbose"/>
-      <h1>v0.9.1</h1>
+      <h1>v0.9.3</h1>
     </header>
     <div id="content">
       <article>
@@ -91,6 +91,18 @@
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
+            <a class="anchor" name="ADD-REPL-CATEGORY"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3 class="funcname">ADD-REPL-CATEGORY</h3>
+                  <span class="funcargs">(CATEGORY &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
             <a class="anchor" name="ATTACH-TO"/>
             <article>
               <header>
@@ -101,6 +113,54 @@
                 </code>
               </header>
               <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <a class="anchor" name="CATEGORIES"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3 class="funcname">CATEGORIES</h3>
+                  <span class="funcargs">(SB-PCL::OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <a class="anchor" name="CATEGORIES"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL METHOD</span>
+                <code>
+                  <h3 class="funcname">CATEGORIES</h3>
+                  <span class="funcargs">((SB-PCL::OBJECT CATEGORY-FILTER))</span>
+                </code>
+              </header>
+              <pre class="funcdesc">automatically generated reader method</pre>
+            </article>
+          </li><li id="template">
+            <a class="anchor" name="CATEGORY-FILTER"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL CLASS</span>
+                <code>
+                  <h3 class="funcname">CATEGORY-FILTER</h3>
+                  <span class="funcargs"></span>
+                </code>
+              </header>
+              <pre class="funcdesc">A simple pipe filter that only lets through matching categories.</pre>
+            </article>
+          </li><li id="template">
+            <a class="anchor" name="CATEGORY-TREE-FILTER"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL CLASS</span>
+                <code>
+                  <h3 class="funcname">CATEGORY-TREE-FILTER</h3>
+                  <span class="funcargs"></span>
+                </code>
+              </header>
+              <pre class="funcdesc">A pipe filter that only lets messages through whose category matches by tree.</pre>
             </article>
           </li><li id="template">
             <a class="anchor" name="CONTROLLER"/>
@@ -259,6 +319,18 @@
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
+            <a class="anchor" name="REMOVE-REPL-CATEGORY"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3 class="funcname">REMOVE-REPL-CATEGORY</h3>
+                  <span class="funcargs">(CATEGORY &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
             <a class="anchor" name="REPL-FAUCET"/>
             <article>
               <header>
@@ -305,6 +377,18 @@
                 </code>
               </header>
               <pre class="funcdesc">A file logger that rotates at the given (cron) interval.</pre>
+            </article>
+          </li><li id="template">
+            <a class="anchor" name="SET-REPL-CATEGORIES"/>
+            <article>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3 class="funcname">SET-REPL-CATEGORIES</h3>
+                  <span class="funcargs">(CATEGORIES &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
             <a class="anchor" name="SET-REPL-LEVEL"/>
