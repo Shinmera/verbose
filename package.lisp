@@ -11,8 +11,9 @@
   (:shadow LOG ERROR WARN DEBUG TRACE)
   (:export :log :fatal :severe :error :warn :info :debug :trace
            :*global-controller* :controller :remove-global-controller :make-standard-global-controller
-           :attach-to :set-repl-level
+           :attach-to :set-repl-level :add-repl-category :remove-repl-category :set-repl-categories
            :*repl-faucet-timestamp*
            :repl-faucet :format-message
            :cron-interval :make-cron-interval
-           :rotating-log-faucet :rotate-log :update-interval))
+           :rotating-log-faucet :rotate-log :update-interval
+           :category-filter :category-tree-filter :categories))
