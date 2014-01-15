@@ -60,13 +60,7 @@
   (flet ((convert (part)
            (let ((part (slot-value interval part)))
              (if (eq part :*) :every part))))
-    (cl-cron:make-cron-job 
-     method 
-     :minute (convert 'minute)
-     :hour (convert 'hour)
-     :day-of-month (convert 'day-of-month)
-     :month (convert 'month)
-     :day-of-week (convert 'day-of-week))))
+    ))
 
 (defgeneric rotate-log (rotating-log-faucet)
   (:documentation "Create a new log file."))
@@ -76,7 +70,6 @@
 
 (defclass rotating-log-faucet (faucet)
   ((interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
-   (cron-job :initform NIL :accessor cron-job)
    (time-format :initarg :time-format :initform *repl-faucet-timestamp* :accessor time-format)
    (file :initarg :file :initform #p"verbose.log" :accessor faucet-file)
    (current-file :initform NIL :accessor current-file)
@@ -117,9 +110,7 @@
     (info :LOGGING.ROTATE "Opened log file: ~a" path)))
 
 (defmethod update-interval ((faucet rotating-log-faucet) (interval cron-interval))
-  (if (cron-job faucet) (cl-cron:delete-cron-job (cron-job faucet)))
-  (setf (interval faucet) interval
-        (cron-job faucet) (start-cron-job interval #'(lambda () (rotate-log faucet)))))
+  )
 
 
 (defclass category-filter (filter)
