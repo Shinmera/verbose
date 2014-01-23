@@ -15,7 +15,8 @@
   () (:documentation "A simple logging faucet that prints log messages to the *standard-output*"))
 
 (defmethod print-self ((faucet repl-faucet) stream)
-  (format stream ">>~:[~;~:*~a~]|REPL" (piping:name faucet)))
+  (format stream ">>~:[~;~:*~a~]|REPL" (piping:name faucet))
+  faucet)
 
 (defmethod pass ((faucet repl-faucet) message)
   (format-message faucet message))
@@ -42,7 +43,8 @@
             (hour cron-interval)
             (day-of-month cron-interval)
             (month cron-interval)
-            (day-of-week cron-interval))))
+            (day-of-week cron-interval)))
+  cron-interval)
 
 (defun make-cron-interval (string)
   (flet ((parse-or-any (part)
@@ -77,7 +79,8 @@
   (:documentation "A file logger that rotates at the given (cron) interval."))
 
 (defmethod print-self ((faucet rotating-log-faucet) stream)
-  (format stream ">>~:[~;~:*~a~]|ROTATE(~a)" (piping::name faucet) (interval faucet)))
+  (format stream ">>~:[~;~:*~a~]|ROTATE(~a)" (piping::name faucet) (interval faucet))
+  faucet)
 
 (defmethod initialize-instance :after ((faucet rotating-log-faucet) &rest args)
   (declare (ignore args))

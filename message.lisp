@@ -26,7 +26,8 @@
             (local-time:format-timestring NIL (message-time message) :format '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
             (message-level message)
             (message-category message)
-            (message-content message))))
+            (message-content message)))
+  message)
 
 (defun log-message (level category content)
   (assert (find level '(:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE)) (level)
