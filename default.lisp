@@ -39,7 +39,12 @@
   (when filter
     (setf pipe (make-instance 'filter :next pipe :test filter)))
   (connect-new (get-pipe controller (symbol-name level))
-               (add-pipe controller pipe)))
+               (add-pipe controller pipe))
+  pipe)
+
+(defun restart-global-controller ()
+  (remove-global-controller)
+  (setf *global-controller* (make-standard-global-controller)))
 
 (defun set-repl-level (level &key (faucet-name "REPL") (controller *global-controller*))
   (let ((faucet (get-pipe controller faucet-name)))
