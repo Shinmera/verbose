@@ -11,6 +11,8 @@
   (:shadow LOG ERROR WARN DEBUG TRACE)
   (:export :log :fatal :severe :error :warn :info :debug :trace
            :*global-controller* :controller :remove-global-controller :make-standard-global-controller
+           :*controller-standard-output* :*controller-error-output*
+           :restart-global-controller
            :attach-to :set-repl-level :add-repl-category :remove-repl-category :set-repl-categories
            :*repl-faucet-timestamp*
            :repl-faucet :format-message
