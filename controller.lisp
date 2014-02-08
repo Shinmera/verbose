@@ -7,12 +7,14 @@
 (in-package :verbose)
 
 (defvar *global-controller* NIL)
+(defvar *controller-standard-output* *standard-output*)
+(defvar *controller-error-output* *error-output*)
 
 (defclass controller (pipeline)
   ((source :initarg :source :initform () :accessor source)
    (thread :accessor controller-thread)
    (message-condition :initform (make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
-   (message-pipe :initform (make-array '(50) :adjustable T :fill-pointer 0) :reader message-pipe)
+   (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
    (message-lock :initform (make-lock "MESSAGE-LOCK") :reader message-lock))
   (:documentation "Main controller class that holds the logging construct."))
 
@@ -26,24 +28,29 @@
       (setf (source controller) source)))
 
   (setf (controller-thread controller)
-        (make-thread #'controller-loop :name "CONTROLLER MESSAGE LOOP"
-                     :initial-bindings `((*standard-output* . ,*standard-output*)
-                                         (*error-output* . ,*error-output*)
+        (make-thread #'controller-loop
+                     :name "CONTROLLER MESSAGE LOOP"
+                     :initial-bindings `((*controller-standard-output* . ,*controller-standard-output*)
+                                         (*controller-error-output* . ,*controller-error-output*)
+                                         (*standard-output* . ,*controller-standard-output*)
+                                         (*error-output* . ,*controller-error-output*)
                                          (*global-controller* . ,controller)))))
 
 (defun controller-loop ()
   (let* ((controller *global-controller*)
          (lock (message-lock controller))
          (condition (message-condition controller))
-         (message-pipe (message-pipe controller))
          (source (source controller)))
     (acquire-lock lock)
     (loop do
-         (let ((length (length message-pipe)))
-           (loop for i from 0 below length
-              for message = (vector-pop message-pipe)
-              do (pass source message)))
-         (condition-wait condition lock))))
+      (with-simple-restart (skip "Skip processing the message.")
+        (let ((queue (message-pipe controller)))
+          (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
+          (release-lock lock)
+          (loop for message across queue
+                do (pass source message))))
+      (acquire-lock lock)
+      (condition-wait condition lock))))
 
 (defmethod pass ((controller controller) message)
   (with-lock-held ((message-lock controller))
