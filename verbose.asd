@@ -13,7 +13,7 @@
   :version "0.9.3"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
-  :description "A logging library designed for use in Radiance."
+  :description "A logging framework using the piping library."
   :serial T
   :components ((:file "package")
                (:file "controller")
