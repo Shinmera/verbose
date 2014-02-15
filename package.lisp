@@ -9,13 +9,45 @@
   (:nicknames :verbose :v)
   (:use :cl :bordeaux-threads :piping :split-sequence)
   (:shadow LOG ERROR WARN DEBUG TRACE)
-  (:export :log :fatal :severe :error :warn :info :debug :trace
-           :*global-controller* :controller :remove-global-controller :make-standard-global-controller
-           :*controller-standard-output* :*controller-error-output*
-           :restart-global-controller
-           :attach-to :set-repl-level :add-repl-category :remove-repl-category :set-repl-categories
-           :*repl-faucet-timestamp*
-           :repl-faucet :format-message
-           :cron-interval :make-cron-interval
-           :rotating-log-faucet :rotate-log :update-interval
-           :category-filter :category-tree-filter :categories))
+  ;; controller.lisp
+  (:export
+   #:*global-controller*
+   #:*controller-standard-output*
+   #:*controller-standard-input*
+   #:controller
+   #:pass
+   #:remove-global-controller)
+  ;; default.lisp
+  (:export
+   #:make-standard-global-controller
+   #:restart-global-controller
+   #:attach-to
+   #:set-repl-level
+   #:set-repl-categories
+   #:add-repl-category
+   #:remove-repl-category)
+  ;; message.lisp
+  (:export
+   #:log-object
+   #:message
+   #:log-message
+   #:log
+   #:FATAL
+   #:SEVERE
+   #:ERROR
+   #:WARN
+   #:INFO
+   #:DEBUG
+   #:TRACE)
+  ;; pipes.lisp
+  (:export
+   #:*repl-faucet-timestamp*
+   #:format-message
+   #:repl-faucet
+   #:make-cron-interval
+   #:rotating-log-faucet
+   #:rotate-log
+   #:update-interval
+   #:stop-rotation
+   #:category-filter
+   #:category-tree-filter))

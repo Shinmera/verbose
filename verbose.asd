@@ -24,7 +24,8 @@
                :local-time
                :bordeaux-threads
                :split-sequence
-               :cl-fad))
+               :cl-fad
+               :clon))
 
 (defsystem verbose-doc
   :name "Verbose Doc"

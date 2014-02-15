@@ -6,6 +6,10 @@
 
 (in-package :verbose)
 
+;;
+;; REPL
+;;
+
 (defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 
 (defgeneric format-message (faucet message)
@@ -28,54 +32,24 @@
           (message-category message)
           (message-content message)))
 
-(defclass cron-interval ()
-  ((minute :initarg :m :initform :* :accessor minute)
-   (hour :initarg :h :initform :* :accessor hour)
-   (day-of-month :initarg :dom :initform :* :accessor day-of-month)
-   (month :initarg :month :initform :* :accessor month)
-   (day-of-week :initarg :dow :initform :* :accessor day-of-week))
-  (:documentation "A cron-like interval for rotations."))
-
-(defmethod print-object ((cron-interval cron-interval) stream)
-  (print-unreadable-object (cron-interval stream :type T)
-    (format stream "~a ~a ~a ~a ~a" 
-            (minute cron-interval)
-            (hour cron-interval)
-            (day-of-month cron-interval)
-            (month cron-interval)
-            (day-of-week cron-interval)))
-  cron-interval)
+;;
+;; CRON
+;;
 
 (defun make-cron-interval (string)
-  (flet ((parse-or-any (part)
-           (if (string-equal part "*") :* (parse-integer part))))
-    (let ((parts (split-sequence #\Space string)))
-      (assert (= (length parts) 5) () "Interval requires exactly 5 parts.")
-      (make-instance 'cron-interval 
-                     :m (parse-or-any (first parts))
-                     :h (parse-or-any (second parts))
-                     :dom (parse-or-any (third parts))
-                     :month (parse-or-any (fourth parts))
-                     :dow (parse-or-any (fifth parts))))))
-
-(defun start-cron-job (interval method)
-  (flet ((convert (part)
-           (let ((part (slot-value interval part)))
-             (if (eq part :*) :every part))))
-    ))
-
-(defgeneric rotate-log (rotating-log-faucet)
-  (:documentation "Create a new log file."))
-
-(defgeneric update-interval (rotating-log-faucet interval)
-  (:documentation "Change the rotation interval"))
+  "Parse a cron interval."
+  (destructuring-bind (m h dm mo dw) (split-sequence #\Space string)
+    (flet ((parse (a) (if (string= a "*") '* (parse-integer a))))
+      (clon:make-typed-cron-schedule
+       :minute (parse m) :hour (parse h) :day-of-month (parse dm) :month (parse mo) :day-of-week (parse dw)))))
 
 (defclass rotating-log-faucet (faucet)
-  ((interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
-   (time-format :initarg :time-format :initform *repl-faucet-timestamp* :accessor time-format)
+  ((time-format :initarg :time-format :initform *repl-faucet-timestamp* :accessor time-format)
    (file :initarg :file :initform #p"verbose.log" :accessor faucet-file)
    (current-file :initform NIL :accessor current-file)
-   (stream :initform NIL :accessor faucet-stream))
+   (interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
+   (scheduler :initform NIL :accessor scheduler)
+   (timer :initform NIL :accessor timer))
   (:documentation "A file logger that rotates at the given (cron) interval."))
 
 (defmethod print-self ((faucet rotating-log-faucet) stream)
@@ -85,36 +59,53 @@
 (defmethod initialize-instance :after ((faucet rotating-log-faucet) &rest args)
   (declare (ignore args))
   (rotate-log faucet)
-  (update-interval faucet (interval faucet)))
+  (update-interval faucet))
+
+(defgeneric rotate-log (rotating-log-faucet)
+  (:documentation "Initiate a log rotation immediately. This does not influence the automatic rotation interval."))
+(defmethod rotate-log ((faucet rotating-log-faucet))
+  (setf (current-file faucet)
+        (merge-pathnames (format NIL "~a-~a"
+                                 (local-time:format-timestring NIL (local-time:now) :format (time-format faucet))
+                                 (pathname-name (faucet-file faucet)))
+                         (faucet-file faucet)))
+  (ensure-directories-exist (cl-fad:pathname-directory-pathname (faucet-file faucet)))
+  (v:info :verbose.log "Rotated to new file ~a" (current-file faucet)))
+
+(defgeneric update-interval (rotating-log-faucet &optional (cron-interval))
+  (:documentation "Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule."))
+(defmethod update-interval ((faucet rotating-log-faucet) &optional (interval (interval faucet)))
+  (when (timer faucet) (trivial-timers:unschedule-timer (timer faucet)))
+  (when (stringp interval) (setf interval (make-cron-interval interval)))
+  (setf (interval faucet) interval
+        (scheduler faucet) (clon:make-scheduler interval)
+        (timer faucet) (clon:schedule-function #'(lambda () (rotate-log faucet)) (scheduler faucet))))
+
+(defgeneric stop-rotation (rotating-log-faucet)
+  (:documentation "Stops the rotation. Logging will still continue on the current file."))
+(defmethod stop-rotation ((faucet rotating-log-faucet))
+  (when (timer faucet)
+    (trivial-timers:unschedule-timer (timer faucet)))
+  (setf (scheduler faucet) NIL
+        (timer faucet) NIL))
 
 (defmethod pass ((faucet rotating-log-faucet) message)
-  (let ((stream (faucet-stream faucet)))
-    (when (and (streamp stream) (open-stream-p stream))
-      (format-message faucet message)
-      (finish-output stream))))
+  (when (current-file faucet)
+    (with-open-file (stream (current-file faucet) :direction :output :if-exists :append :if-does-not-exist :create)
+      (when (and (streamp stream) (open-stream-p stream))
+        (format-message stream message)
+        (finish-output stream)))))
 
-(defmethod format-message ((faucet rotating-log-faucet) message)
-  (format (faucet-stream faucet) "~a [~5,a] <~a>: ~a~%"
+(defmethod format-message ((stream stream) message)
+  (format stream "~&~a [~5,a] <~a>: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
           (message-category message)
           (message-content message)))
 
-(defmethod rotate-log ((faucet rotating-log-faucet))
-  (let ((stream (faucet-stream faucet)))
-    (when (and (streamp stream) (open-stream-p stream))
-      (close stream)
-      (info :LOGGING.ROTATE "Closed log file: ~a" (current-file faucet))))
-  (let* ((file (faucet-file faucet))
-         (path (make-pathname :name (format NIL "~a-~a" (local-time:format-timestring T (local-time:now) :format (time-format faucet)) (pathname-name file))
-                              :defaults file)))
-    (setf (faucet-stream faucet) (open path :direction :output :if-does-not-exist :create :if-exists :append))
-    (setf (current-file faucet) path)
-    (info :LOGGING.ROTATE "Opened log file: ~a" path)))
-
-(defmethod update-interval ((faucet rotating-log-faucet) (interval cron-interval))
-  )
-
+;;
+;; Filters
+;;
 
 (defclass category-filter (filter)
   ((categories :initarg :categories :initform T :accessor categories))
