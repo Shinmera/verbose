@@ -7,10 +7,10 @@
 (in-package :verbose)
 
 (defun log-object (object)
-  (pass *global-controller* object))
+  (pass object))
 
 (defun get-current-thread ()
-  #+sbcl sb-thread:*current-thread*)
+  (bordeaux-threads:current-thread))
 
 (defclass message ()
   ((time :initarg :time :initform (local-time:now) :accessor message-time)

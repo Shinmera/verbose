@@ -27,7 +27,7 @@
                :cl-fad
                :clon))
 
-(defsystem verbose-doc
-  :name "Verbose Doc"
-  :components ((:file "documentation"))
-  :depends-on (:verbose :lquery-doc))
+;; (defsystem verbose-doc
+;;   :name "Verbose Doc"
+;;   :components ((:file "documentation"))
+;;   :depends-on (:verbose :lquery-doc))

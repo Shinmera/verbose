@@ -7,12 +7,13 @@
 (in-package :verbose)
 
 (defvar *global-controller* NIL)
-(defvar *controller-standard-output* *standard-output*)
-(defvar *controller-error-output* *error-output*)
+(defvar *shared-instances* (make-hash-table))
+
+(setf (gethash 'standard-output *shared-instances*) *standard-output*)
+(setf (gethash 'error-output *shared-instances*) *error-output*)
 
 (defclass controller (pipeline)
-  ((source :initarg :source :initform () :accessor source)
-   (thread :accessor controller-thread)
+  ((thread :accessor controller-thread)
    (message-condition :initform (make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
    (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
    (message-lock :initform (make-lock "MESSAGE-LOCK") :reader message-lock))
@@ -20,20 +21,10 @@
 
 (defmethod initialize-instance :after ((controller controller) &rest rest)
   (declare (ignore rest))
-  
-  (unless (source controller)
-    (let ((source (add-pipe controller 'source :name "SOURCE"))
-          (faucet (add-pipe controller 'print-faucet :name "PRINTER")))
-      (connect-next source faucet)
-      (setf (source controller) source)))
-
   (setf (controller-thread controller)
         (make-thread #'controller-loop
                      :name "CONTROLLER MESSAGE LOOP"
-                     :initial-bindings `((*controller-standard-output* . ,*controller-standard-output*)
-                                         (*controller-error-output* . ,*controller-error-output*)
-                                         (*standard-output* . ,*controller-standard-output*)
-                                         (*error-output* . ,*controller-error-output*)
+                     :initial-bindings `((*shared-instances* . ,*shared-instances*)
                                          (*global-controller* . ,controller)))))
 
 (defun controller-loop ()
@@ -44,7 +35,9 @@
     (acquire-lock lock)
     (loop do
       (with-simple-restart (skip "Skip processing the message.")
-        (let ((queue (message-pipe controller)))
+        (let ((queue (message-pipe controller))
+              (*standard-output* (gethash 'standard-output *shared-instances*))
+              (*error-output* (gethash 'error-output *shared-instances*)))
           (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
           (release-lock lock)
           (loop for message across queue
@@ -52,13 +45,21 @@
       (acquire-lock lock)
       (condition-wait condition lock))))
 
-(defmethod pass ((controller controller) message)
-  (with-lock-held ((message-lock controller))
-    (vector-push-extend message (message-pipe controller)))
-  (condition-notify (message-condition controller))
+(defun pass (message)
+  (with-lock-held ((message-lock *global-controller*))
+    (vector-push-extend message (message-pipe *global-controller*)))
+  (condition-notify (message-condition *global-controller*))
   NIL)
 
 (defun remove-global-controller ()
   (when (thread-alive-p (controller-thread *global-controller*))
     (destroy-thread (controller-thread *global-controller*)))
   (setf *global-controller* NIL))
+
+(defun shared-instance (key)
+  (with-locked-held ((message-lock *global-controller*))
+    (gethash key *shared-instances*)))
+
+(defgeneric (setf shared-instnace) (val key)
+  (:method (val key)
+    (setf (gethash key *shared-instances*) val)))
