@@ -51,13 +51,8 @@
   (condition-notify (message-condition *global-controller*))
   NIL)
 
-(defun remove-global-controller ()
-  (when (thread-alive-p (controller-thread *global-controller*))
-    (destroy-thread (controller-thread *global-controller*)))
-  (setf *global-controller* NIL))
-
 (defun shared-instance (key)
-  (with-locked-held ((message-lock *global-controller*))
+  (with-lock-held ((message-lock *global-controller*))
     (gethash key *shared-instances*)))
 
 (defgeneric (setf shared-instnace) (val key)

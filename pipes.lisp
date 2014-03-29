@@ -18,12 +18,13 @@
 (defclass repl-faucet (faucet)
   () (:documentation "A simple logging faucet that prints log messages to the *standard-output*"))
 
-(defmethod print-self ((faucet repl-faucet) stream)
-  (format stream ">>~:[~;~:*~a~]|REPL" (piping:name faucet))
+(defmethod print-object ((faucet repl-faucet) stream)
+  (format stream ">>REPL")
   faucet)
 
 (defmethod pass ((faucet repl-faucet) message)
-  (format-message faucet message))
+  (format-message faucet message)
+  message)
 
 (defmethod format-message ((faucet repl-faucet) message)
   (format T "~&LOG: ~a [~5,a] <~a>: ~a~%"
@@ -52,8 +53,8 @@
    (timer :initform NIL :accessor timer))
   (:documentation "A file logger that rotates at the given (cron) interval."))
 
-(defmethod print-self ((faucet rotating-log-faucet) stream)
-  (format stream ">>~:[~;~:*~a~]|ROTATE(~a)" (piping::name faucet) (interval faucet))
+(defmethod print-object ((faucet rotating-log-faucet) stream)
+  (format stream ">>ROTATE(~a)" (interval faucet))
   faucet)
 
 (defmethod initialize-instance :after ((faucet rotating-log-faucet) &rest args)
@@ -94,7 +95,8 @@
     (with-open-file (stream (current-file faucet) :direction :output :if-exists :append :if-does-not-exist :create)
       (when (and (streamp stream) (open-stream-p stream))
         (format-message stream message)
-        (finish-output stream)))))
+        (finish-output stream))))
+  message)
 
 (defmethod format-message ((stream stream) message)
   (format stream "~&~a [~5,a] <~a>: ~a~%"
@@ -112,9 +114,9 @@
   (:documentation "A simple pipe filter that only lets through matching categories."))
 
 (defmethod pass ((filter category-filter) (message message))
-  (if (or (eql (categories filter) T)
-          (find (message-category message) (categories filter)))
-      (pass (next filter) message)))
+  (when (or (eql (categories filter) T)
+            (find (message-category message) (categories filter)))
+    message))
 
 (defclass category-tree-filter (category-filter) ()
   (:documentation "A pipe filter that only lets messages through whose category matches by tree."))
@@ -134,6 +136,6 @@
                            (length filter-leaves))))))
 
 (defmethod pass ((filter category-tree-filter) (message message))
-  (if (or (eql (categories filter) T)
-          (find (message-category message) (categories filter) :test #'%matching-tree-category))
-      (pass (next filter) message)))
+  (when (or (eql (categories filter) T)
+            (find (message-category message) (categories filter) :test #'%matching-tree-category))
+    message))
