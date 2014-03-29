@@ -31,7 +31,7 @@
   (let* ((controller *global-controller*)
          (lock (message-lock controller))
          (condition (message-condition controller))
-         (source (source controller)))
+         (pipeline (pipeline controller)))
     (acquire-lock lock)
     (loop do
       (with-simple-restart (skip "Skip processing the message.")
@@ -41,14 +41,14 @@
           (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
           (release-lock lock)
           (loop for message across queue
-                do (pass source message))))
+                do (pass pipeline message))))
       (acquire-lock lock)
       (condition-wait condition lock))))
 
-(defun pass (message)
-  (with-lock-held ((message-lock *global-controller*))
-    (vector-push-extend message (message-pipe *global-controller*)))
-  (condition-notify (message-condition *global-controller*))
+(defmethod pass ((controller controller) message)
+  (with-lock-held ((message-lock controller))
+    (vector-push-extend message (message-pipe controller)))
+  (condition-notify (message-condition controller))
   NIL)
 
 (defun shared-instance (key)

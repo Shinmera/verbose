@@ -7,7 +7,7 @@
 (in-package :verbose)
 
 (defun log-object (object)
-  (pass object))
+  (pass *global-controller* object))
 
 (defun get-current-thread ()
   (bordeaux-threads:current-thread))
