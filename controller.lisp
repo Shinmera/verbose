@@ -7,13 +7,10 @@
 (in-package :verbose)
 
 (defvar *global-controller* NIL)
-(defvar *shared-instances* (make-hash-table))
-
-(setf (gethash 'standard-output *shared-instances*) *standard-output*)
-(setf (gethash 'error-output *shared-instances*) *error-output*)
 
 (defclass controller (pipeline)
   ((thread :accessor controller-thread)
+   (shares :initform (make-hash-table) :accessor shares)
    (message-condition :initform (make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
    (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
    (message-lock :initform (make-lock "MESSAGE-LOCK") :reader message-lock))
@@ -24,8 +21,9 @@
   (setf (controller-thread controller)
         (make-thread #'controller-loop
                      :name "CONTROLLER MESSAGE LOOP"
-                     :initial-bindings `((*shared-instances* . ,*shared-instances*)
-                                         (*global-controller* . ,controller)))))
+                     :initial-bindings `((*global-controller* . ,controller))))
+  (setf (gethash 'standard-output (shares controller)) *standard-output*)
+  (setf (gethash 'error-output (shares controller)) *error-output*))
 
 (defun controller-loop ()
   (let* ((controller *global-controller*)
@@ -36,8 +34,8 @@
     (loop do
       (with-simple-restart (skip "Skip processing the message.")
         (let ((queue (message-pipe controller))
-              (*standard-output* (gethash 'standard-output *shared-instances*))
-              (*error-output* (gethash 'error-output *shared-instances*)))
+              (*standard-output* (gethash 'standard-output (shares controller)))
+              (*error-output* (gethash 'error-output (shares controller))))
           (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
           (release-lock lock)
           (loop for message across queue
@@ -53,8 +51,9 @@
 
 (defun shared-instance (key)
   (with-lock-held ((message-lock *global-controller*))
-    (gethash key *shared-instances*)))
+    (gethash key (shares *global-controller*))))
 
 (defgeneric (setf shared-instance) (val key)
   (:method (val key)
-    (setf (gethash key *shared-instances*) val)))
+    (with-lock-held ((message-lock *global-controller*))
+      (setf (gethash key (shares *global-controller*)) val))))
