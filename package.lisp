@@ -20,7 +20,6 @@
    #:make-standard-global-controller
    #:remove-global-controller
    #:restart-global-controller
-   #:attach-to
    #:set-repl-level
    #:set-repl-categories
    #:add-repl-category
