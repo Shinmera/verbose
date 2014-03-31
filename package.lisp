@@ -12,14 +12,13 @@
   ;; controller.lisp
   (:export
    #:*global-controller*
-   #:*controller-standard-output*
-   #:*controller-standard-input*
    #:controller
    #:pass
-   #:remove-global-controller)
+   #:shared-instance)
   ;; default.lisp
   (:export
    #:make-standard-global-controller
+   #:remove-global-controller
    #:restart-global-controller
    #:attach-to
    #:set-repl-level
@@ -30,6 +29,11 @@
   (:export
    #:log-object
    #:message
+   #:message-time
+   #:message-thread
+   #:message-level
+   #:message-category
+   #:message-content
    #:log-message
    #:log
    #:FATAL
@@ -46,8 +50,13 @@
    #:repl-faucet
    #:make-cron-interval
    #:rotating-log-faucet
+   #:time-format
+   #:faucet-file
+   #:current-file
+   #:interval
    #:rotate-log
    #:update-interval
    #:stop-rotation
    #:category-filter
+   #:categories
    #:category-tree-filter))
