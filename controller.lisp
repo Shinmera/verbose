@@ -55,6 +55,6 @@
   (with-lock-held ((message-lock *global-controller*))
     (gethash key *shared-instances*)))
 
-(defgeneric (setf shared-instnace) (val key)
+(defgeneric (setf shared-instance) (val key)
   (:method (val key)
     (setf (gethash key *shared-instances*) val)))
