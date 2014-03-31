@@ -9,12 +9,9 @@
 (defun log-object (object)
   (pass *global-controller* object))
 
-(defun get-current-thread ()
-  (bordeaux-threads:current-thread))
-
 (defclass message ()
   ((time :initarg :time :initform (local-time:now) :accessor message-time)
-   (thread :initarg :thread :initform (get-current-thread) :accessor message-thread)
+   (thread :initarg :thread :initform (bordeaux-threads:current-thread) :accessor message-thread)
    (level :initarg :level :initform :INFO :accessor message-level)
    (category :initarg :category :initform :GENERAL :accessor message-category)
    (content :initarg :content :initform NIL :accessor message-content))
