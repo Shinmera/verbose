@@ -15,6 +15,9 @@
     (insert (make-instance 'category-tree-filter) pipe)
     (insert (make-instance 'repl-faucet) pipe)
     (add-segment pipeline pipe)
+    (set-name pipeline '(0 0) 'repl-level-filter)
+    (set-name pipeline '(0 1) 'repl-category-filter)
+    (set-name pipeline '(0 2) 'repl-faucet)
     pipeline))
 
 (defun remove-global-controller ()
