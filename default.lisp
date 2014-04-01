@@ -6,52 +6,76 @@
 
 (in-package :verbose)
 
-(defvar *repl-level* :INFO)
-
 (defun make-standard-global-controller ()
+  "Creates a new standard global controller construct with a setup pipeline."
   (let ((pipeline (make-instance 'controller))
         (pipe (make-pipe)))
-    (insert (make-instance 'predicate-filter :predicate #'(lambda (message) (eql (message-level message) *repl-level*))) pipe)
+    (insert (make-instance 'predicate-filter :predicate #'(lambda (message) (message-visible message (shared-instance 'repl-level)))) pipe)
     (insert (make-instance 'category-tree-filter) pipe)
     (insert (make-instance 'repl-faucet) pipe)
     (add-segment pipeline pipe)
-    (set-name pipeline '(0 0) 'repl-level-filter)
-    (set-name pipeline '(0 1) 'repl-category-filter)
-    (set-name pipeline '(0 2) 'repl-faucet)
+    (set-name pipeline (list 0 0) 'repl-level-filter)
+    (set-name pipeline (list 0 1) 'repl-category-filter)
+    (set-name pipeline (list 0 2) 'repl-faucet)
+    (setf (gethash 'repl-level (shares pipeline)) :INFO)
     pipeline))
 
 (defun remove-global-controller ()
+  "Attempts to destroy the thread of the controller and remove it."
   (when (thread-alive-p (controller-thread *global-controller*))
     (destroy-thread (controller-thread *global-controller*)))
   (setf *global-controller* NIL))
 
 (defun restart-global-controller ()
+  "Removes the controller and creates a new one in its place."
   (remove-global-controller)
   (setf *global-controller* (make-standard-global-controller)))
 
-(defun set-repl-level (level)
-  (with-lock-held ((message-lock *global-controller*))
-    (setf *repl-level* level)))
+(defun repl-level ()
+  "Returns the current logging level of the standard repl faucet."
+  (shared-instance 'repl-level))
 
-(defun set-repl-categories (categories)
-  (with-lock-held ((message-lock *global-controller*))
-    (setf (categories (find-place *global-controller* 'repl-category-filter))
-          categories)))
+(defgeneric (setf repl-level) (level)
+  (:documentation "Sets the logging level of the standard repl faucet.")
+  (:method (level)
+    (setf (shared-instance 'repl-level) level)))
+
+(defun repl-categories ()
+  "Returns the list of allowed log categories of the standard category-tree-filter.
+If NIL is returned, anything is passed."
+  (with-controller-lock ()
+    (categories (find-place *global-controller* 'repl-category-filter))))
+
+(defgeneric (setf repl-categories) (categories)
+  (:documentation "Sets the list of allowed log categories of the standard category-tree-filter.")
+  (:method (categories)
+    (with-controller-lock ()
+      (setf (categories (find-place *global-controller* 'repl-category-filter))
+            categories))))
 
 (defun add-repl-category (category)
-  (with-lock-held ((message-lock *global-controller*))
+  "Add a new repl category to allow."
+  (with-controller-lock ()
     (let ((categories (categories (find-place *global-controller* 'repl-category-filter))))
       (if (listp categories)
           (pushnew category categories)
           (setf (categories (find-place *global-controller* 'repl-category-filter)) (list category))))))
 
 (defun remove-repl-category (category)
-  (with-lock-held ((message-lock *global-controller*))
+  "Remove an existing repl category."
+  (with-controller-lock ()
     (let ((categories (categories (find-place *global-controller* 'repl-category-filter))))
       (when (listp categories)
         (setf (categories (find-place *global-controller* 'repl-category-filter))
               (delete category categories))))))
 
+(defun add-pipe (&rest segments)
+  "Add a new pipe with the given segments."
+  (with-controller-lock ()
+    (let ((pipe (make-pipe)))
+      (dolist (segment segments)
+        (insert segment pipe))
+      (add-segment *global-controller* pipe))))
 
 (unless *global-controller*
   (setf *global-controller* (make-standard-global-controller)))
