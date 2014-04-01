@@ -18,4 +18,4 @@
   (write-documentation :verbose
                        (merge-pathnames "about-template.html" (asdf:system-source-directory :verbose))
                        :output-file (merge-pathnames "about.html" (asdf:system-source-directory :verbose))
-                       :exclude '(:internal)))
+                       :exclude '(:internal :method)))
