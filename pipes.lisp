@@ -10,7 +10,8 @@
 ;; REPL
 ;;
 
-(defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
+(defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2))
+  "Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.")
 
 (defgeneric format-message (faucet message)
   (:documentation "Wrapper around pass to potentially be overwritten if the output format should be changed."))
