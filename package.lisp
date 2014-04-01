@@ -13,6 +13,7 @@
   (:export
    #:*global-controller*
    #:controller
+   #:with-controller-lock
    #:pass
    #:shared-instance)
   ;; default.lisp
@@ -20,12 +21,14 @@
    #:make-standard-global-controller
    #:remove-global-controller
    #:restart-global-controller
-   #:set-repl-level
-   #:set-repl-categories
+   #:repl-level
+   #:repl-categories
    #:add-repl-category
-   #:remove-repl-category)
+   #:remove-repl-category
+   #:add-pipe)
   ;; message.lisp
   (:export
+   #:*levels*
    #:log-object
    #:message
    #:message-time
@@ -33,6 +36,7 @@
    #:message-level
    #:message-category
    #:message-content
+   #:message-visible
    #:log-message
    #:log
    #:FATAL
