@@ -10,7 +10,7 @@
 
 (defsystem verbose
   :name "Verbose"
-  :version "0.9.3"
+  :version "1.0.0"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
   :description "A logging framework using the piping library."
