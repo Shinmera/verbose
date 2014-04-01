@@ -8,16 +8,20 @@
     <title>Verbose - About</title>
     <style type="text/css">
       code{font-family: Consolas, Inconsolata, monospace;}
+      code.line{margin-left: 20px;}
+      code.output{color: #882222;}
+      code.output:before{content:"=&gt; ";}
+      code a{text-decoration: none; color: blue;}
       h3{display: inline-block;margin:0;padding:0;}
-      #docs{list-style: none;}
-      #docs li{margin-bottom: 20px;}
-      #docs pre{margin: 0 0 0 10px; white-space: pre-wrap;}
+      .docs{list-style: none;}
+      .docs li{margin-bottom: 20px;}
+      .docs pre{margin: 0 0 0 10px; white-space: pre-wrap;}
     </style>
   </head>
   <body>
     <header>
-      <img src="http://shinmera.tymoon.eu/public/verbose-logo.png" alt="Verbose"/>
-      <h1>v0.9.3</h1>
+      <img src="verbose-logo.png" alt="Verbose"/>
+      <h1>v1.0.0</h1>
     </header>
     <div id="content">
       <article>
@@ -31,436 +35,603 @@
         <p>
           Load Verbose with ASDF or Quicklisp.
         </p>
-        <code>(ql:quickload :verbose)</code>
+        <code class="line">(ql:quickload :verbose)</code>
         <p>
           By default, a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:
         </p>
-        <code>(v:info :TEST "Hello world!")</code>
+        <code class="line">(v:info :TEST "Hello world!")</code><br/>
+        <code class="line output">LOG: 2014-04-01 13:32:49 [INFO ] &lt;TEST&gt;: Hello world!</code>
         <p>
           Each logging statement expects a category and a format string. Optionally you can pass in format arguments:
         </p>
-        <code>(v:info :TEST "2+2=~f" (+ 2 2))</code>
+        <code class="line">(v:info :TEST "2+2=~f" (+ 2 2))</code><br/>
+        <code class="line output">LOG: 2014-04-01 13:33:20 [INFO ] &lt;TEST&gt;: 2+2=4.0</code>
         <p>
-          You can change the logging level of the REPL-Faucet easily:
+          You can change the logging level of the REPL-Faucet easily. The available levels by default are <code>:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE</code>.
         </p>
-        <code>(v:set-repl-level :DEBUG)</code>
+        <code class="line">(setf (v:repl-level) :DEBUG)</code>
         <p>
-          If you want to add a new Faucet, such as a rotating file log, you can use attach-to:
+          Using the <code>category-tree-filter</code> you can limit what kinds of categories are shown:
         </p>
-        <code>(v:attach-to :ERROR (make-instance 'rotating-log-faucet))</code>
+        <code class="line">(v:add-repl-category :foo.bar.*)</code><br/>
+        <code class="line">(v:info :foo "Foo")</code><br/>
+        <code class="line output"> </code><br/>
+        <code class="line">(v:info :foo.bar.stuff "Foo")</code><br/>
+        <code class="line output">LOG: 2014-04-01 13:51:03 [INFO ] &lt;FOO.BAR.STUFF&gt;: Foo</code>
         <p>
-          It should now write all log messages from :ERROR and above to a date-prepended log file in the current working directory. Have a look at the slots for rotating-log-faucet for finer control.
-          You can also add a category filter:
+          To extend Verbose you can use <a href="http://shinmera.github.io/piping">Piping</a> constructs. The <code>*global-controller*</code> in itself is a pipeline and can be used as such.
         </p>
-        <code>(v:attach-to :ERROR (make-instance 'rotating-log-faucet) :category :TEST)</code>
         <p>
-          The <code>*global-controller*</code> is in itself a pipeline. You can therefore use all the tools from <a href="http://shinmera.tymoon.eu/public/piping-about.html">piping</a> to customize even more.
+          Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use <code>shared-instance</code>, which is <code>SETF</code>able. One shared-instance that is most likely of interest to everyone is saved under the symbol <code>*standard-output*</code>. Setting this anew is useful if you start a new REPL session and need to redirect logging to it. The <code>*standard-output*</code> and <code>*error-output*</code> shared-instances are handled specially and their values are bound to their respective special variables during message passing.
+        </p>
+        <code class="line">(setf (v:shared-instance '*standard-output*) *standard-output*)</code>
+        <p>
+          If you want to log to a file, you can either create your own custom file faucet, or use a preset one like the <code>rotating-log-faucet</code>:
+        </p>
+        <code class="line">(v:add-pipe (make-instance 'v:rotating-log-faucet :file #p"~/verbose.log" :interval (v:make-cron-interval "* * * * *")))</code>
+        <p>
+          Which creates a faucet that logs to a file with "verbose.log" suffix in your home directory, rotating every minute as per the CRON interval. In case you want to filter the message to a certain level or category instead, you can precede it by a filter:
+        </p>
+        <pre><code class="line">(v:add-pipe (make-instance 'piping:predicate-filter :predicate #'(lambda (message) (message-visible message :WARN)))
+              (make-instance 'v:rotating-log-faucet :file #p"~/verbose.log" :interval (v:make-cron-interval "* * * * *")))</code></pre>
+        <p>
+          Using the piping constructs you can create complex logging systems or even change the pipeline on the fly. When you do, be aware that since the message passing happens in a separate thread, you need to acquire access to the pipeline first before modifying it:
+        </p>
+        <pre><code class="line">(v:with-controller-lock ()
+    (piping:pipeline v:*global-controller*))</code></pre>
+        <p>
+          See the documentation of <a href="http://shinmera.github.io/piping">Piping</a> for more information.
         </p>
       </article>
       <article>
         <header><h2>Other Guff</h2></header>
         <p>
-          Verbose is a sub-project of TyNETv5 ("Radiance"), licensed under the <a href="http://opensource.org/licenses/Artistic-2.0">Artistic License 2.0</a> and ©2013 TymoonNET/NexT, <a href="http://shinmera.com">Nicolas Hafner</a>.<br/>
-          This program can be obtained via git on <a href="git://git.tymoon.eu/verbose.git">git://git.tymoon.eu/verbose.git</a>. For questions, patches or suggestions, please contact me via <a href="mailto:shinmera@tymoon.eu">email</a>.
+          Verbose is licensed under the <a href="http://opensource.org/licenses/Artistic-2.0">Artistic License 2.0</a> and ©2014 TymoonNET/NexT, <a href="http://shinmera.com">Nicolas Hafner</a>.<br/>
+          This library can be obtained via git on <a href="https://github.com/Shinmera/verbose.git">https://github.com/Shinmera/verbose.git</a>. For questions, patches or suggestions, please contact me via <a href="mailto:shinmera@tymoon.eu">email</a> or write a <a href="https://github.com/Shinmera/verbose/issues/new">github issue</a>.
         </p>
       </article>
       <article>
-        <header><h2>Package Function Index</h2></header>
-        <ul id="docs"><li id="template">
-            <a class="anchor" name="*GLOBAL-CONTROLLER*"/>
+        <header><h2><a name="VERBOSE" href="#VERBOSE">Verbose Package Index</a></h2></header>
+        <ul id="docs" class="docs"><li id="template">
             <article>
+              <a class="anchor" name="*GLOBAL-CONTROLLER*"/>
               <header>
                 <span class="functype">EXTERNAL SPECIAL</span>
                 <code>
-                  <h3 class="funcname">*GLOBAL-CONTROLLER*</h3>
+                  <h3><a class="funcname" href="#Foo">*GLOBAL-CONTROLLER*</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Global variable holding the current verbose controller instance and pipeline..</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="*REPL-FAUCET-TIMESTAMP*"/>
             <article>
+              <a class="anchor" name="*LEVELS*"/>
               <header>
                 <span class="functype">EXTERNAL SPECIAL</span>
                 <code>
-                  <h3 class="funcname">*REPL-FAUCET-TIMESTAMP*</h3>
+                  <h3><a class="funcname" href="#Foo">*LEVELS*</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="ADD-REPL-CATEGORY"/>
             <article>
+              <a class="anchor" name="*REPL-FAUCET-TIMESTAMP*"/>
+              <header>
+                <span class="functype">EXTERNAL SPECIAL</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">*REPL-FAUCET-TIMESTAMP*</a></h3>
+                  <span class="funcargs"></span>
+                </code>
+              </header>
+              <pre class="funcdesc">Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="ADD-PIPE"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">ADD-REPL-CATEGORY</h3>
-                  <span class="funcargs">(CATEGORY &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                  <h3><a class="funcname" href="#Foo">ADD-PIPE</a></h3>
+                  <span class="funcargs">(&amp;REST SEGMENTS)</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Add a new pipe with the given segments.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="ATTACH-TO"/>
             <article>
+              <a class="anchor" name="ADD-REPL-CATEGORY"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">ATTACH-TO</h3>
-                  <span class="funcargs">(LEVEL PIPE &amp;KEY CATEGORY FILTER (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                  <h3><a class="funcname" href="#Foo">ADD-REPL-CATEGORY</a></h3>
+                  <span class="funcargs">(CATEGORY)</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Add a new repl category to allow.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="CATEGORIES"/>
             <article>
+              <a class="anchor" name="CATEGORIES"/>
               <header>
                 <span class="functype">EXTERNAL GENERIC</span>
                 <code>
-                  <h3 class="funcname">CATEGORIES</h3>
-                  <span class="funcargs">(SB-PCL::OBJECT)</span>
+                  <h3><a class="funcname" href="#Foo">CATEGORIES</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
                 </code>
               </header>
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="CATEGORIES"/>
             <article>
-              <header>
-                <span class="functype">EXTERNAL METHOD</span>
-                <code>
-                  <h3 class="funcname">CATEGORIES</h3>
-                  <span class="funcargs">((SB-PCL::OBJECT CATEGORY-FILTER))</span>
-                </code>
-              </header>
-              <pre class="funcdesc">automatically generated reader method</pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="CATEGORY-FILTER"/>
-            <article>
+              <a class="anchor" name="CATEGORY-FILTER"/>
               <header>
                 <span class="functype">EXTERNAL CLASS</span>
                 <code>
-                  <h3 class="funcname">CATEGORY-FILTER</h3>
+                  <h3><a class="funcname" href="#Foo">CATEGORY-FILTER</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
               <pre class="funcdesc">A simple pipe filter that only lets through matching categories.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="CATEGORY-TREE-FILTER"/>
             <article>
+              <a class="anchor" name="CATEGORY-TREE-FILTER"/>
               <header>
                 <span class="functype">EXTERNAL CLASS</span>
                 <code>
-                  <h3 class="funcname">CATEGORY-TREE-FILTER</h3>
+                  <h3><a class="funcname" href="#Foo">CATEGORY-TREE-FILTER</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
               <pre class="funcdesc">A pipe filter that only lets messages through whose category matches by tree.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="CONTROLLER"/>
             <article>
+              <a class="anchor" name="CONTROLLER"/>
               <header>
                 <span class="functype">EXTERNAL CLASS</span>
                 <code>
-                  <h3 class="funcname">CONTROLLER</h3>
+                  <h3><a class="funcname" href="#Foo">CONTROLLER</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
-              <pre class="funcdesc">Main controller class that holds the logging construct.</pre>
+              <pre class="funcdesc">Main controller class that holds the logging pipeline, thread and shares.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="CRON-INTERVAL"/>
             <article>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3 class="funcname">CRON-INTERVAL</h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">A cron-like interval for rotations.</pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="DEBUG"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3 class="funcname">DEBUG</h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="ERROR"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3 class="funcname">ERROR</h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="FATAL"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3 class="funcname">FATAL</h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="FORMAT-MESSAGE"/>
-            <article>
+              <a class="anchor" name="CURRENT-FILE"/>
               <header>
                 <span class="functype">EXTERNAL GENERIC</span>
                 <code>
-                  <h3 class="funcname">FORMAT-MESSAGE</h3>
+                  <h3><a class="funcname" href="#Foo">CURRENT-FILE</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="DEBUG"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">DEBUG</a></h3>
+                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="ERROR"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">ERROR</a></h3>
+                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="FATAL"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">FATAL</a></h3>
+                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="FAUCET-FILE"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">FAUCET-FILE</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="FORMAT-MESSAGE"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">FORMAT-MESSAGE</a></h3>
                   <span class="funcargs">(FAUCET MESSAGE)</span>
                 </code>
               </header>
               <pre class="funcdesc">Wrapper around pass to potentially be overwritten if the output format should be changed.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="FORMAT-MESSAGE"/>
             <article>
+              <a class="anchor" name="INFO"/>
               <header>
-                <span class="functype">EXTERNAL METHOD</span>
+                <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">FORMAT-MESSAGE</h3>
-                  <span class="funcargs">((FAUCET ROTATING-LOG-FAUCET) (MESSAGE T))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="FORMAT-MESSAGE"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL METHOD</span>
-                <code>
-                  <h3 class="funcname">FORMAT-MESSAGE</h3>
-                  <span class="funcargs">((FAUCET REPL-FAUCET) (MESSAGE T))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="INFO"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3 class="funcname">INFO</h3>
+                  <h3><a class="funcname" href="#Foo">INFO</a></h3>
                   <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
                 </code>
               </header>
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="LOG"/>
             <article>
+              <a class="anchor" name="INTERVAL"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">INTERVAL</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="LOG"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">LOG</h3>
+                  <h3><a class="funcname" href="#Foo">LOG</a></h3>
                   <span class="funcargs">(LEVEL CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Logs a new message under given level and category, using the format-string and arguments as message text.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="MAKE-CRON-INTERVAL"/>
             <article>
+              <a class="anchor" name="LOG-MESSAGE"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">MAKE-CRON-INTERVAL</h3>
+                  <h3><a class="funcname" href="#Foo">LOG-MESSAGE</a></h3>
+                  <span class="funcargs">(LEVEL CATEGORY CONTENT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Logs a message with the given parameters.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="LOG-OBJECT"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">LOG-OBJECT</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Shorthand for (pass *global-controller* object)</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MAKE-CRON-INTERVAL"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MAKE-CRON-INTERVAL</a></h3>
                   <span class="funcargs">(STRING)</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Parse a cron interval.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="MAKE-STANDARD-GLOBAL-CONTROLLER"/>
             <article>
+              <a class="anchor" name="MAKE-STANDARD-GLOBAL-CONTROLLER"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">MAKE-STANDARD-GLOBAL-CONTROLLER</h3>
+                  <h3><a class="funcname" href="#Foo">MAKE-STANDARD-GLOBAL-CONTROLLER</a></h3>
                   <span class="funcargs">()</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Creates a new standard global controller construct with a setup pipeline.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="REMOVE-GLOBAL-CONTROLLER"/>
             <article>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3 class="funcname">REMOVE-GLOBAL-CONTROLLER</h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="REMOVE-REPL-CATEGORY"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3 class="funcname">REMOVE-REPL-CATEGORY</h3>
-                  <span class="funcargs">(CATEGORY &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="REPL-FAUCET"/>
-            <article>
+              <a class="anchor" name="MESSAGE"/>
               <header>
                 <span class="functype">EXTERNAL CLASS</span>
                 <code>
-                  <h3 class="funcname">REPL-FAUCET</h3>
+                  <h3><a class="funcname" href="#Foo">MESSAGE</a></h3>
+                  <span class="funcargs"></span>
+                </code>
+              </header>
+              <pre class="funcdesc">Message object to be passed around the system.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-CATEGORY"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-CATEGORY</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-CONTENT"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-CONTENT</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-LEVEL"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-LEVEL</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-THREAD"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-THREAD</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-TIME"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-TIME</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="MESSAGE-VISIBLE"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">MESSAGE-VISIBLE</a></h3>
+                  <span class="funcargs">(MESSAGE LEVEL)</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Returns T if the message is visible under the given level.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="REMOVE-GLOBAL-CONTROLLER"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">REMOVE-GLOBAL-CONTROLLER</a></h3>
+                  <span class="funcargs">()</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Attempts to destroy the thread of the controller and remove it.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="REMOVE-REPL-CATEGORY"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">REMOVE-REPL-CATEGORY</a></h3>
+                  <span class="funcargs">(CATEGORY)</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Remove an existing repl category.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="REPL-CATEGORIES"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">REPL-CATEGORIES</a></h3>
+                  <span class="funcargs">()</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Returns the list of allowed log categories of the standard category-tree-filter.
+If NIL is returned, anything is passed.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="REPL-FAUCET"/>
+              <header>
+                <span class="functype">EXTERNAL CLASS</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">REPL-FAUCET</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
               <pre class="funcdesc">A simple logging faucet that prints log messages to the *standard-output*</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="ROTATE-LOG"/>
             <article>
+              <a class="anchor" name="REPL-LEVEL"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">REPL-LEVEL</a></h3>
+                  <span class="funcargs">()</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Returns the current logging level of the standard repl faucet.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="RESTART-GLOBAL-CONTROLLER"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">RESTART-GLOBAL-CONTROLLER</a></h3>
+                  <span class="funcargs">()</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Removes the controller and creates a new one in its place.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="ROTATE-LOG"/>
               <header>
                 <span class="functype">EXTERNAL GENERIC</span>
                 <code>
-                  <h3 class="funcname">ROTATE-LOG</h3>
+                  <h3><a class="funcname" href="#Foo">ROTATE-LOG</a></h3>
                   <span class="funcargs">(ROTATING-LOG-FAUCET)</span>
                 </code>
               </header>
-              <pre class="funcdesc">Create a new log file.</pre>
+              <pre class="funcdesc">Initiate a log rotation immediately. This does not influence the automatic rotation interval.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="ROTATE-LOG"/>
             <article>
-              <header>
-                <span class="functype">EXTERNAL METHOD</span>
-                <code>
-                  <h3 class="funcname">ROTATE-LOG</h3>
-                  <span class="funcargs">((ROTATING-LOG-FAUCET ROTATING-LOG-FAUCET))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="ROTATING-LOG-FAUCET"/>
-            <article>
+              <a class="anchor" name="ROTATING-LOG-FAUCET"/>
               <header>
                 <span class="functype">EXTERNAL CLASS</span>
                 <code>
-                  <h3 class="funcname">ROTATING-LOG-FAUCET</h3>
+                  <h3><a class="funcname" href="#Foo">ROTATING-LOG-FAUCET</a></h3>
                   <span class="funcargs"></span>
                 </code>
               </header>
               <pre class="funcdesc">A file logger that rotates at the given (cron) interval.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="SET-REPL-CATEGORIES"/>
             <article>
+              <a class="anchor" name="SEVERE"/>
               <header>
                 <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">SET-REPL-CATEGORIES</h3>
-                  <span class="funcargs">(CATEGORIES &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="SET-REPL-LEVEL"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3 class="funcname">SET-REPL-LEVEL</h3>
-                  <span class="funcargs">(LEVEL &amp;KEY (FAUCET-NAME "REPL") (CONTROLLER *GLOBAL-CONTROLLER*))</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <a class="anchor" name="SEVERE"/>
-            <article>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3 class="funcname">SEVERE</h3>
+                  <h3><a class="funcname" href="#Foo">SEVERE</a></h3>
                   <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
                 </code>
               </header>
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="TRACE"/>
             <article>
+              <a class="anchor" name="SHARED-INSTANCE"/>
               <header>
-                <span class="functype">EXTERNAL MACRO</span>
+                <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">TRACE</h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                  <h3><a class="funcname" href="#Foo">SHARED-INSTANCE</a></h3>
+                  <span class="funcargs">(SYMBOL)</span>
                 </code>
               </header>
-              <pre class="funcdesc"></pre>
+              <pre class="funcdesc">Return a shared instance identified by the symbol.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="UPDATE-INTERVAL"/>
             <article>
+              <a class="anchor" name="STOP-ROTATION"/>
               <header>
                 <span class="functype">EXTERNAL GENERIC</span>
                 <code>
-                  <h3 class="funcname">UPDATE-INTERVAL</h3>
-                  <span class="funcargs">(ROTATING-LOG-FAUCET INTERVAL)</span>
+                  <h3><a class="funcname" href="#Foo">STOP-ROTATION</a></h3>
+                  <span class="funcargs">(ROTATING-LOG-FAUCET)</span>
                 </code>
               </header>
-              <pre class="funcdesc">Change the rotation interval</pre>
+              <pre class="funcdesc">Stops the rotation. Logging will still continue on the current file.</pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="UPDATE-INTERVAL"/>
             <article>
+              <a class="anchor" name="TIME-FORMAT"/>
               <header>
-                <span class="functype">EXTERNAL METHOD</span>
+                <span class="functype">EXTERNAL GENERIC</span>
                 <code>
-                  <h3 class="funcname">UPDATE-INTERVAL</h3>
-                  <span class="funcargs">((ROTATING-LOG-FAUCET ROTATING-LOG-FAUCET) (INTERVAL CRON-INTERVAL))</span>
+                  <h3><a class="funcname" href="#Foo">TIME-FORMAT</a></h3>
+                  <span class="funcargs">(OBJECT)</span>
                 </code>
               </header>
               <pre class="funcdesc"></pre>
             </article>
           </li><li id="template">
-            <a class="anchor" name="WARN"/>
             <article>
+              <a class="anchor" name="TRACE"/>
               <header>
-                <span class="functype">EXTERNAL MACRO</span>
+                <span class="functype">EXTERNAL FUNCTION</span>
                 <code>
-                  <h3 class="funcname">WARN</h3>
+                  <h3><a class="funcname" href="#Foo">TRACE</a></h3>
                   <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
                 </code>
               </header>
               <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="UPDATE-INTERVAL"/>
+              <header>
+                <span class="functype">EXTERNAL GENERIC</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">UPDATE-INTERVAL</a></h3>
+                  <span class="funcargs">(ROTATING-LOG-FAUCET &amp;OPTIONAL (CRON-INTERVAL))</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.</pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="WARN"/>
+              <header>
+                <span class="functype">EXTERNAL FUNCTION</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">WARN</a></h3>
+                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                </code>
+              </header>
+              <pre class="funcdesc"></pre>
+            </article>
+          </li><li id="template">
+            <article>
+              <a class="anchor" name="WITH-CONTROLLER-LOCK"/>
+              <header>
+                <span class="functype">EXTERNAL MACRO</span>
+                <code>
+                  <h3><a class="funcname" href="#Foo">WITH-CONTROLLER-LOCK</a></h3>
+                  <span class="funcargs">((&amp;OPTIONAL (CONTROLLER '*GLOBAL-CONTROLLER*)) &amp;BODY FORMS)</span>
+                </code>
+              </header>
+              <pre class="funcdesc">Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots.</pre>
             </article>
           </li></ul>
       </article>
