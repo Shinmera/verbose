@@ -62,7 +62,7 @@ near-instant."
 (defun shared-instance (symbol)
   "Return a shared instance identified by the symbol."
   (with-controller-lock ()
-    (gethash key (shares *global-controller*))))
+    (gethash symbol (shares *global-controller*))))
 
 (defgeneric (setf shared-instance) (val symbol)
   (:documentation "Set the shared instance identified by the symbol.")
