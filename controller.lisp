@@ -46,7 +46,8 @@
           (loop for message across queue
                 do (pass pipeline message))))
       (acquire-lock lock)
-      (condition-wait condition lock))))
+      (when (= 0 (length (message-pipe controller)))
+        (condition-wait condition lock)))))
 
 (defmethod pass ((controller controller) message)
   "Pass a raw message into the controller pipeline. 
