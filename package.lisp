@@ -4,11 +4,10 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(in-package :cl)
-(defpackage org.tymoonnext.radiance.lib.verbose
-  (:nicknames :verbose :v)
+(defpackage #:org.tymoonnext.radiance.lib.verbose
+  (:nicknames #:verbose #:v)
   (:use :cl :bordeaux-threads :piping :split-sequence)
-  (:shadow LOG ERROR WARN DEBUG TRACE)
+  (:shadow #:LOG #:ERROR #:WARN #:DEBUG #:TRACE)
   ;; controller.lisp
   (:export
    #:*global-controller*
