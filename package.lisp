@@ -4,6 +4,7 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
+(push :verbose *features*)
 (defpackage #:org.tymoonnext.radiance.lib.verbose
   (:nicknames #:verbose #:v)
   (:use :cl :bordeaux-threads :piping :split-sequence)
