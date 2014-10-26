@@ -1,6 +1,6 @@
 #|
   This file is a part of Verbose
-  (c) 2013 TymoonNET/NexT http://tymoon.eu (shinmera@tymoon.eu)
+  (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
@@ -32,7 +32,8 @@
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
           (message-category message)
-          (message-content message)))
+          (message-content message))
+  (finish-output))
 
 ;;
 ;; CRON
