@@ -7,6 +7,7 @@
 (in-package :verbose)
 
 (defvar *global-controller* NIL "Global variable holding the current verbose controller instance and pipeline..")
+(defvar *muffled-categories* NIL "Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).")
 
 (defclass controller (pipeline)
   ((thread :accessor controller-thread)
@@ -54,10 +55,15 @@
 
 Note that this is not instant as the message passing is done in a separate thread.
 This function returns as soon as the message is added to the queue, which should be
-near-instant."
-  (with-controller-lock (controller)
-    (vector-push-extend message (message-pipe controller)))
-  (condition-notify (message-condition controller))
+near-instant.
+
+Also note that, depending on *MUFFLED-CATEGORIES*, some messages may not actually
+be put onto the pipeline at all."
+  (unless (or (find T *muffled-categories*)
+              (find (message-category message) *muffled-categories*))
+    (with-controller-lock (controller)
+      (vector-push-extend message (message-pipe controller)))
+    (condition-notify (message-condition controller)))
   NIL)
 
 (defun shared-instance (symbol)
@@ -70,3 +76,11 @@ near-instant."
   (:method (val symbol)
     (with-controller-lock ()
       (setf (gethash symbol (shares *global-controller*)) val))))
+
+(defmacro with-muffled-logging ((&optional (category T)) &body body)
+  "Muffles all messages of CATEGORY within BODY.
+This means that all logging statements that fit CATEGORY within the BODY
+are not actually ever handed to the pipeline. If CATEGORY is T, all
+messages are muffled."
+  `(let ((*muffled-categories* (cons ,category *muffled-categories*)))
+     ,@body))

@@ -12,10 +12,12 @@
   ;; controller.lisp
   (:export
    #:*global-controller*
+   #:*muffled-categories*
    #:controller
    #:with-controller-lock
    #:pass
-   #:shared-instance)
+   #:shared-instance
+   #:with-muffled-logging)
   ;; default.lisp
   (:export
    #:make-standard-global-controller
