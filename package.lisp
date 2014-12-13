@@ -27,6 +27,7 @@
    #:repl-categories
    #:add-repl-category
    #:remove-repl-category
+   #:output-here
    #:add-pipe)
   ;; message.lisp
   (:export
