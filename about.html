@@ -1,638 +1,763 @@
-<!DOCTYPE html><!--
-  This file is a part of Verbose
-  (c) 2013 TymoonNET/NexT http://tymoon.eu (shinmera@tymoon.eu)
-  Author: Nicolas Hafner <shinmera@tymoon.eu>
-  !--><html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8"/>
-    <title>Verbose - About</title>
+    <title>VERBOSE</title>
     <style type="text/css">
-      code{font-family: Consolas, Inconsolata, monospace;}
-      code.line{margin-left: 20px;}
-      code.output{color: #882222;}
-      code.output:before{content:"=&gt; ";}
-      code a{text-decoration: none; color: blue;}
-      h3{display: inline-block;margin:0;padding:0;}
-      .docs{list-style: none;}
-      .docs li{margin-bottom: 20px;}
-      .docs pre{margin: 0 0 0 10px; white-space: pre-wrap;}
+      html{font-family: serif;}
+      code a{text-decoration: none;}
+      h1{display: inline-block; margin-bottom: 0;}
+      code{font-family: monospace;}
+      h4{display: inline-block; margin: 0; padding: 0;}
+      #symbol-index ul{list-style: none;}
+      .package li{margin-bottom: 20px;}
+      .package pre{margin: 0 0 0 10px; white-space: pre-wrap;}
+      .package .nicknames{font-weight: normal;}
+      table{margin: 20px;}
+      td{padding-bottom: 10px;}
     </style>
   </head>
   <body>
     <header>
-      <img src="verbose-logo.png" alt="Verbose"/>
-      <h1>v1.0.0</h1>
+      <h1><img src="verbose-logo.png" alt="verbose"/></h1>
+      <span>1.1.0</span>
+      <p>A logging framework using the piping library.</p>
     </header>
     <div id="content">
       <article>
-        <header><h2>What is Verbose?</h2></header>
-        <p>
-          Verbose is a logging framework for Common Lisp that aims to provide a good default setup as well as an extensible back-end to suit all your logging needs.
-        </p>
+        <c:documentate>
+          <span><h2>How To</h2>
+
+<p>Load Verbose with ASDF or Quicklisp.</p>
+
+<pre><code>(ql:quickload :verbose)
+</code></pre>
+
+<p>By default, a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:</p>
+
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :TEST &quot;Hello world!&quot;)
+=&gt; LOG: 2014-04-01 13:32:49 [INFO ] &lt;TEST&gt;: Hello world!
+</code></pre>
+
+<p>Each logging statement expects a category and a format string. Optionally you can pass in format arguments:</p>
+
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :TEST &quot;2+2=~f&quot; (<a href="http://l1sp.org/cl/+">+</a> 2 2))
+=&gt; LOG: 2014-04-01 13:33:20 [INFO ] &lt;TEST&gt;: 2+2=4.0
+</code></pre>
+
+<p>You can change the logging level of the REPL-Faucet easily. The available levels by default are <code>:FATAL</code> <code>:SEVERE</code> <code>:ERROR</code> <code>:WARN</code> <code>:INFO</code> <code>:DEBUG</code> <code>:TRACE</code>.</p>
+
+<pre><code>(<a href="http://l1sp.org/cl/setf">setf</a> (<a href="#VERBOSE:REPL-LEVEL">v:repl-level</a>) :DEBUG)
+</code></pre>
+
+<p>Using the category-tree-filter you can limit what kinds of categories are shown:</p>
+
+<pre><code>(<a href="#VERBOSE:ADD-REPL-CATEGORY">v:add-repl-category</a> :foo.bar.*)
+(<a href="#VERBOSE:INFO">v:info</a> :foo &quot;Foo&quot;)
+
+(<a href="#VERBOSE:INFO">v:info</a> :foo.bar.stuff &quot;Foo&quot;)
+=&gt; LOG: 2014-04-01 13:51:03 [INFO ] &lt;FOO.BAR.STUFF&gt;: Foo
+</code></pre>
+
+<p>Verbose also allows you to pass as many categories as you want. This permits to use the categories as a form of tag, rather than a hierarchy.</p>
+
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> '(:system :server) &quot;Starting up!&quot;)
+=&gt; LOG: 2014-04-01 13:51:52 [INFO ] &lt;SYSTEM&gt;&lt;SERVER&gt;: Starting up!
+</code></pre>
+
+<p>Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use shared-instance, which is SETFable. One shared-instance that is most likely of interest to everyone is saved under the symbol <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code>. Setting this anew is useful if you start a new REPL session and need to redirect logging to it. The <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> and <code><a href="http://l1sp.org/cl/*error-output*">*error-output*</a></code> shared-instances are handled specially and their values are bound to their respective special variables during message passing.</p>
+
+<pre><code>(<a href="http://l1sp.org/cl/setf">setf</a> (<a href="#VERBOSE:SHARED-INSTANCE">v:shared-instance</a> '*standard-output*) *standard-output*)
+</code></pre>
+
+<p>Since this is a very frequent thing to do, especially when hooking into remote lisps, you can achieve the same as above by using <code><a href="#VERBOSE:OUTPUT-HERE">output-here</a></code>.</p>
+
+<p>On the other hand, you can also suppress output completely or of certain categories using <code><a href="#VERBOSE:WITH-MUFFLED-LOGGING">with-muffled-logging</a></code>.</p>
+
+<pre><code>(<a href="#VERBOSE:WITH-MUFFLED-LOGGING">v:with-muffled-logging</a> (:test :something.or.other)
+  (<a href="#VERBOSE:INFO">v:info</a> :test &quot;A&quot;)
+  (<a href="#VERBOSE:INFO">v:info</a> :something.else &quot;B&quot;)
+  (<a href="#VERBOSE:INFO">v:info</a> :something.or.other &quot;C&quot;))
+=&gt; LOG: 2015-03-03 17:36:41 [INFO ] &lt;SOMETHING.ELSE&gt;: B
+</code></pre>
+
+<p>The <code><a href="#VERBOSE:WITH-MUFFLED-LOGGING">with-muffled-logging</a></code> macro rebinds the <code><a href="#VERBOSE:*MUFFLED-CATEGORIES*">*muffled-categories*</a></code> by prepending the given categories. You can of course also set <code><a href="#VERBOSE:*MUFFLED-CATEGORIES*">*muffled-categories*</a></code> directly to achieve a global muffling. If you don't pass anything to <code><a href="#VERBOSE:WITH-MUFFLED-LOGGING">with-muffled-logging</a></code> or push <code>T</code> onto <code><a href="#VERBOSE:*MUFFLED-CATEGORIES*">*muffled-categories*</a></code>, all messages will be suppressed.</p>
+
+<p>If you want to log to a file, you can either create your own custom file faucet, or use a preset one like the rotating-log-faucet:</p>
+
+<pre><code>(<a href="#VERBOSE:ADD-PIPE">v:add-pipe</a> (<a href="http://l1sp.org/cl/make-instance">make-instance</a> 'v:rotating-log-faucet :file #p&quot;~/verbose.log&quot; :interval (<a href="#VERBOSE:MAKE-CRON-INTERVAL">v:make-cron-interval</a> &quot;* * * * *&quot;)))
+</code></pre>
+
+<p>Which creates a faucet that logs to a file with &quot;verbose.log&quot; suffix in your home directory, rotating every minute as per the CRON interval. In case you want to filter the message to a certain level or category instead, you can precede it by a filter:</p>
+
+<pre><code>(<a href="#VERBOSE:ADD-PIPE">v:add-pipe</a> (<a href="http://l1sp.org/cl/make-instance">make-instance</a> 'piping:predicate-filter :predicate #'(<a href="http://l1sp.org/cl/lambda">lambda</a> (<a href="#VERBOSE:MESSAGE">message</a>) (<a href="#VERBOSE:MESSAGE-VISIBLE">message-visible</a> message :WARN)))
+            (<a href="http://l1sp.org/cl/make-instance">make-instance</a> 'v:rotating-log-faucet :file #p&quot;~/verbose.log&quot; :interval (<a href="#VERBOSE:MAKE-CRON-INTERVAL">v:make-cron-interval</a> &quot;* * * * *&quot;)))
+</code></pre>
+
+<p>Using the piping constructs you can create complex logging systems or even change the pipeline on the fly. When you do, be aware that since the message passing happens in a separate thread, you need to acquire access to the pipeline first before modifying it:</p>
+
+<pre><code>(<a href="#VERBOSE:WITH-CONTROLLER-LOCK">v:with-controller-lock</a> ()
+(piping:pipeline v:*global-controller*))
+</code></pre>
+
+<p>See the documentation of <a href="http://shinmera.github.io/piping/">Piping</a> for more information.</p>
+</span>
+        </c:documentate>
       </article>
       <article>
-        <header><h2>How To</h2></header>
-        <p>
-          Load Verbose with ASDF or Quicklisp.
-        </p>
-        <code class="line">(ql:quickload :verbose)</code>
-        <p>
-          By default, a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:
-        </p>
-        <code class="line">(v:info :TEST "Hello world!")</code><br/>
-        <code class="line output">LOG: 2014-04-01 13:32:49 [INFO ] &lt;TEST&gt;: Hello world!</code>
-        <p>
-          Each logging statement expects a category and a format string. Optionally you can pass in format arguments:
-        </p>
-        <code class="line">(v:info :TEST "2+2=~f" (+ 2 2))</code><br/>
-        <code class="line output">LOG: 2014-04-01 13:33:20 [INFO ] &lt;TEST&gt;: 2+2=4.0</code>
-        <p>
-          You can change the logging level of the REPL-Faucet easily. The available levels by default are <code>:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE</code>.
-        </p>
-        <code class="line">(setf (v:repl-level) :DEBUG)</code>
-        <p>
-          Using the <code>category-tree-filter</code> you can limit what kinds of categories are shown:
-        </p>
-        <code class="line">(v:add-repl-category :foo.bar.*)</code><br/>
-        <code class="line">(v:info :foo "Foo")</code><br/>
-        <code class="line output"> </code><br/>
-        <code class="line">(v:info :foo.bar.stuff "Foo")</code><br/>
-        <code class="line output">LOG: 2014-04-01 13:51:03 [INFO ] &lt;FOO.BAR.STUFF&gt;: Foo</code>
-        <p>
-          To extend Verbose you can use <a href="http://shinmera.github.io/piping">Piping</a> constructs. The <code>*global-controller*</code> in itself is a pipeline and can be used as such.
-        </p>
-        <p>
-          Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use <code>shared-instance</code>, which is <code>SETF</code>able. One shared-instance that is most likely of interest to everyone is saved under the symbol <code>*standard-output*</code>. Setting this anew is useful if you start a new REPL session and need to redirect logging to it. The <code>*standard-output*</code> and <code>*error-output*</code> shared-instances are handled specially and their values are bound to their respective special variables during message passing.
-        </p>
-        <code class="line">(setf (v:shared-instance '*standard-output*) *standard-output*)</code>
-        <p>
-          If you want to log to a file, you can either create your own custom file faucet, or use a preset one like the <code>rotating-log-faucet</code>:
-        </p>
-        <code class="line">(v:add-pipe (make-instance 'v:rotating-log-faucet :file #p"~/verbose.log" :interval (v:make-cron-interval "* * * * *")))</code>
-        <p>
-          Which creates a faucet that logs to a file with "verbose.log" suffix in your home directory, rotating every minute as per the CRON interval. In case you want to filter the message to a certain level or category instead, you can precede it by a filter:
-        </p>
-        <pre><code class="line">(v:add-pipe (make-instance 'piping:predicate-filter :predicate #'(lambda (message) (message-visible message :WARN)))
-              (make-instance 'v:rotating-log-faucet :file #p"~/verbose.log" :interval (v:make-cron-interval "* * * * *")))</code></pre>
-        <p>
-          Using the piping constructs you can create complex logging systems or even change the pipeline on the fly. When you do, be aware that since the message passing happens in a separate thread, you need to acquire access to the pipeline first before modifying it:
-        </p>
-        <pre><code class="line">(v:with-controller-lock ()
-    (piping:pipeline v:*global-controller*))</code></pre>
-        <p>
-          See the documentation of <a href="http://shinmera.github.io/piping">Piping</a> for more information.
-        </p>
+        <h2>Copyright</h2>
+        <span>verbose</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license and ©<span>2015</span> <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span>. This library can be obtained on <a href="https://github.com/Shinmera/verbose">https://github.com/Shinmera/verbose</a>.
       </article>
-      <article>
-        <header><h2>Other Guff</h2></header>
-        <p>
-          Verbose is licensed under the <a href="http://opensource.org/licenses/Artistic-2.0">Artistic License 2.0</a> and ©2014 TymoonNET/NexT, <a href="http://shinmera.com">Nicolas Hafner</a>.<br/>
-          This library can be obtained via git on <a href="https://github.com/Shinmera/verbose.git">https://github.com/Shinmera/verbose.git</a>. For questions, patches or suggestions, please contact me via <a href="mailto:shinmera@tymoon.eu">email</a> or write a <a href="https://github.com/Shinmera/verbose/issues/new">github issue</a>.
-        </p>
-      </article>
-      <article>
-        <header><h2><a name="VERBOSE" href="#VERBOSE">Verbose Package Index</a></h2></header>
-        <ul id="docs" class="docs"><li id="template">
-            <article>
-              <a class="anchor" name="*GLOBAL-CONTROLLER*"/>
-              <header>
-                <span class="functype">EXTERNAL SPECIAL</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">*GLOBAL-CONTROLLER*</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">Global variable holding the current verbose controller instance and pipeline..</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="*LEVELS*"/>
-              <header>
-                <span class="functype">EXTERNAL SPECIAL</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">*LEVELS*</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="*REPL-FAUCET-TIMESTAMP*"/>
-              <header>
-                <span class="functype">EXTERNAL SPECIAL</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">*REPL-FAUCET-TIMESTAMP*</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="ADD-PIPE"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">ADD-PIPE</a></h3>
-                  <span class="funcargs">(&amp;REST SEGMENTS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Add a new pipe with the given segments.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="ADD-REPL-CATEGORY"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">ADD-REPL-CATEGORY</a></h3>
-                  <span class="funcargs">(CATEGORY)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Add a new repl category to allow.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="CATEGORIES"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">CATEGORIES</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="CATEGORY-FILTER"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">CATEGORY-FILTER</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">A simple pipe filter that only lets through matching categories.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="CATEGORY-TREE-FILTER"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">CATEGORY-TREE-FILTER</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">A pipe filter that only lets messages through whose category matches by tree.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="CONTROLLER"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">CONTROLLER</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">Main controller class that holds the logging pipeline, thread and shares.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="CURRENT-FILE"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">CURRENT-FILE</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="DEBUG"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">DEBUG</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="ERROR"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">ERROR</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="FATAL"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">FATAL</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="FAUCET-FILE"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">FAUCET-FILE</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="FORMAT-MESSAGE"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">FORMAT-MESSAGE</a></h3>
-                  <span class="funcargs">(FAUCET MESSAGE)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Wrapper around pass to potentially be overwritten if the output format should be changed.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="INFO"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">INFO</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="INTERVAL"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">INTERVAL</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="LOG"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">LOG</a></h3>
-                  <span class="funcargs">(LEVEL CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Logs a new message under given level and category, using the format-string and arguments as message text.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="LOG-MESSAGE"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">LOG-MESSAGE</a></h3>
-                  <span class="funcargs">(LEVEL CATEGORY CONTENT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Logs a message with the given parameters.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="LOG-OBJECT"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">LOG-OBJECT</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Shorthand for (pass *global-controller* object)</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MAKE-CRON-INTERVAL"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MAKE-CRON-INTERVAL</a></h3>
-                  <span class="funcargs">(STRING)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Parse a cron interval.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MAKE-STANDARD-GLOBAL-CONTROLLER"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MAKE-STANDARD-GLOBAL-CONTROLLER</a></h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Creates a new standard global controller construct with a setup pipeline.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">Message object to be passed around the system.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-CATEGORY"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-CATEGORY</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-CONTENT"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-CONTENT</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-LEVEL"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-LEVEL</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-THREAD"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-THREAD</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-TIME"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-TIME</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="MESSAGE-VISIBLE"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">MESSAGE-VISIBLE</a></h3>
-                  <span class="funcargs">(MESSAGE LEVEL)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Returns T if the message is visible under the given level.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="REMOVE-GLOBAL-CONTROLLER"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">REMOVE-GLOBAL-CONTROLLER</a></h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Attempts to destroy the thread of the controller and remove it.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="REMOVE-REPL-CATEGORY"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">REMOVE-REPL-CATEGORY</a></h3>
-                  <span class="funcargs">(CATEGORY)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Remove an existing repl category.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="REPL-CATEGORIES"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">REPL-CATEGORIES</a></h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Returns the list of allowed log categories of the standard category-tree-filter.
+      <article id="symbol-index">
+        <h2>Package Index</h2>
+        <ul><li class="package">
+            <h3>
+              <a name="VERBOSE" href="#VERBOSE">VERBOSE</a>
+              <span class="nicknames">(ORG.SHIRAKUMO.VERBOSE V)</span>
+            </h3>
+            <ul><li>
+                <a name="VERBOSE:CATEGORIES"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:CATEGORIES">CATEGORIES</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:CURRENT-FILE"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:CURRENT-FILE">CURRENT-FILE</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:FAUCET-FILE"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:FAUCET-FILE">FAUCET-FILE</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:INTERVAL"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:INTERVAL">INTERVAL</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-CATEGORIES"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-CATEGORIES">MESSAGE-CATEGORIES</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-CONTENT"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-CONTENT">MESSAGE-CONTENT</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-LEVEL"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-LEVEL">MESSAGE-LEVEL</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-THREAD"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-THREAD">MESSAGE-THREAD</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-TIME"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-TIME">MESSAGE-TIME</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:REPL-CATEGORIES"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:REPL-CATEGORIES">REPL-CATEGORIES</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Returns the list of allowed log categories of the standard category-tree-filter.
 If NIL is returned, anything is passed.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="REPL-FAUCET"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">REPL-FAUCET</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">A simple logging faucet that prints log messages to the *standard-output*</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="REPL-LEVEL"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">REPL-LEVEL</a></h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Returns the current logging level of the standard repl faucet.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="RESTART-GLOBAL-CONTROLLER"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">RESTART-GLOBAL-CONTROLLER</a></h3>
-                  <span class="funcargs">()</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Removes the controller and creates a new one in its place.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="ROTATE-LOG"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">ROTATE-LOG</a></h3>
-                  <span class="funcargs">(ROTATING-LOG-FAUCET)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Initiate a log rotation immediately. This does not influence the automatic rotation interval.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="ROTATING-LOG-FAUCET"/>
-              <header>
-                <span class="functype">EXTERNAL CLASS</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">ROTATING-LOG-FAUCET</a></h3>
-                  <span class="funcargs"></span>
-                </code>
-              </header>
-              <pre class="funcdesc">A file logger that rotates at the given (cron) interval.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="SEVERE"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">SEVERE</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="SHARED-INSTANCE"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">SHARED-INSTANCE</a></h3>
-                  <span class="funcargs">(SYMBOL)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Return a shared instance identified by the symbol.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="STOP-ROTATION"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">STOP-ROTATION</a></h3>
-                  <span class="funcargs">(ROTATING-LOG-FAUCET)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Stops the rotation. Logging will still continue on the current file.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="TIME-FORMAT"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">TIME-FORMAT</a></h3>
-                  <span class="funcargs">(OBJECT)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="TRACE"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">TRACE</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="UPDATE-INTERVAL"/>
-              <header>
-                <span class="functype">EXTERNAL GENERIC</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">UPDATE-INTERVAL</a></h3>
-                  <span class="funcargs">(ROTATING-LOG-FAUCET &amp;OPTIONAL (CRON-INTERVAL))</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.</pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="WARN"/>
-              <header>
-                <span class="functype">EXTERNAL FUNCTION</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">WARN</a></h3>
-                  <span class="funcargs">(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc"></pre>
-            </article>
-          </li><li id="template">
-            <article>
-              <a class="anchor" name="WITH-CONTROLLER-LOCK"/>
-              <header>
-                <span class="functype">EXTERNAL MACRO</span>
-                <code>
-                  <h3><a class="funcname" href="#Foo">WITH-CONTROLLER-LOCK</a></h3>
-                  <span class="funcargs">((&amp;OPTIONAL (CONTROLLER '*GLOBAL-CONTROLLER*)) &amp;BODY FORMS)</span>
-                </code>
-              </header>
-              <pre class="funcdesc">Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots.</pre>
-            </article>
+                </article>
+              </li><li>
+                <a name="VERBOSE:REPL-LEVEL"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:REPL-LEVEL">REPL-LEVEL</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Returns the current logging level of the standard repl faucet.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:SHARED-INSTANCE"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:SHARED-INSTANCE">SHARED-INSTANCE</a></h4>
+                      <span/>
+                      <span>(SYMBOL)</span>
+                    </code>
+                  </header>
+                  <pre>Return a shared instance identified by the symbol.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:TIME-FORMAT"/>
+                <article>
+                  <header>
+                    <span>ACCESSOR</span>
+                    <code>
+                      <h4><a href="#VERBOSE:TIME-FORMAT">TIME-FORMAT</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:CATEGORY-FILTER"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:CATEGORY-FILTER">CATEGORY-FILTER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>A simple pipe filter that only lets through matching categories.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:CATEGORY-TREE-FILTER"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:CATEGORY-TREE-FILTER">CATEGORY-TREE-FILTER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>A pipe filter that only lets messages through whose category matches by tree.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:CONTROLLER"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:CONTROLLER">CONTROLLER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Main controller class that holds the logging pipeline, thread and shares.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE">MESSAGE</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Message object to be passed around the system.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:REPL-FAUCET"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:REPL-FAUCET">REPL-FAUCET</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>A simple logging faucet that prints log messages to the *standard-output*</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:ROTATING-LOG-FAUCET"/>
+                <article>
+                  <header>
+                    <span>CLASS</span>
+                    <code>
+                      <h4><a href="#VERBOSE:ROTATING-LOG-FAUCET">ROTATING-LOG-FAUCET</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>A file logger that rotates at the given (cron) interval.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:ADD-PIPE"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:ADD-PIPE">ADD-PIPE</a></h4>
+                      <span/>
+                      <span>(&amp;REST SEGMENTS)</span>
+                    </code>
+                  </header>
+                  <pre>Add a new pipe with the given segments.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:ADD-REPL-CATEGORY"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:ADD-REPL-CATEGORY">ADD-REPL-CATEGORY</a></h4>
+                      <span/>
+                      <span>(CATEGORY)</span>
+                    </code>
+                  </header>
+                  <pre>Add a new repl category to allow.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:DEBUG"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:DEBUG">DEBUG</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:ERROR"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:ERROR">ERROR</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:FATAL"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:FATAL">FATAL</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:INFO"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:INFO">INFO</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:LOG"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:LOG">LOG</a></h4>
+                      <span/>
+                      <span>(LEVEL CATEGORIES FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre>Logs a new message under given level and categories, using the format-string and arguments as message text.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:LOG-MESSAGE"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:LOG-MESSAGE">LOG-MESSAGE</a></h4>
+                      <span/>
+                      <span>(LEVEL CATEGORIES CONTENT)</span>
+                    </code>
+                  </header>
+                  <pre>Logs a message with the given parameters.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:LOG-OBJECT"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:LOG-OBJECT">LOG-OBJECT</a></h4>
+                      <span/>
+                      <span>(OBJECT)</span>
+                    </code>
+                  </header>
+                  <pre>Shorthand for (pass *global-controller* object)</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MAKE-CRON-INTERVAL"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MAKE-CRON-INTERVAL">MAKE-CRON-INTERVAL</a></h4>
+                      <span/>
+                      <span>(STRING)</span>
+                    </code>
+                  </header>
+                  <pre>Parse a cron interval.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER">MAKE-STANDARD-GLOBAL-CONTROLLER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Creates a new standard global controller construct with a setup pipeline.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:OUTPUT-HERE"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:OUTPUT-HERE">OUTPUT-HERE</a></h4>
+                      <span/>
+                      <span>(&amp;OPTIONAL (STANDARD-OUTPUT *STANDARD-OUTPUT*))</span>
+                    </code>
+                  </header>
+                  <pre>Set the *standard-output* shared instance to STANDARD-OUTPUT, effectively
+redirecting output from the logger thread to the specified stream.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:REMOVE-GLOBAL-CONTROLLER"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:REMOVE-GLOBAL-CONTROLLER">REMOVE-GLOBAL-CONTROLLER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Attempts to destroy the thread of the controller and remove it.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:REMOVE-REPL-CATEGORY"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:REMOVE-REPL-CATEGORY">REMOVE-REPL-CATEGORY</a></h4>
+                      <span/>
+                      <span>(CATEGORY)</span>
+                    </code>
+                  </header>
+                  <pre>Remove an existing repl category.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:RESTART-GLOBAL-CONTROLLER"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:RESTART-GLOBAL-CONTROLLER">RESTART-GLOBAL-CONTROLLER</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Removes the controller and creates a new one in its place.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:SEVERE"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:SEVERE">SEVERE</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:TRACE"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:TRACE">TRACE</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:WARN"/>
+                <article>
+                  <header>
+                    <span>FUNCTION</span>
+                    <code>
+                      <h4><a href="#VERBOSE:WARN">WARN</a></h4>
+                      <span/>
+                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:FORMAT-MESSAGE"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:FORMAT-MESSAGE">FORMAT-MESSAGE</a></h4>
+                      <span/>
+                      <span>(FAUCET MESSAGE)</span>
+                    </code>
+                  </header>
+                  <pre>Wrapper around pass to potentially be overwritten if the output format should be changed.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-CATEGORY"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-CATEGORY">MESSAGE-CATEGORY</a></h4>
+                      <span/>
+                      <span>(MESSAGE)</span>
+                    </code>
+                  </header>
+                  <pre/>
+                </article>
+              </li><li>
+                <a name="VERBOSE:MESSAGE-VISIBLE"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:MESSAGE-VISIBLE">MESSAGE-VISIBLE</a></h4>
+                      <span/>
+                      <span>(MESSAGE LEVEL)</span>
+                    </code>
+                  </header>
+                  <pre>Returns T if the message is visible under the given level.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:ROTATE-LOG"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:ROTATE-LOG">ROTATE-LOG</a></h4>
+                      <span/>
+                      <span>(ROTATING-LOG-FAUCET)</span>
+                    </code>
+                  </header>
+                  <pre>Initiate a log rotation immediately. This does not influence the automatic rotation interval.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:STOP-ROTATION"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:STOP-ROTATION">STOP-ROTATION</a></h4>
+                      <span/>
+                      <span>(ROTATING-LOG-FAUCET)</span>
+                    </code>
+                  </header>
+                  <pre>Stops the rotation. Logging will still continue on the current file.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:UPDATE-INTERVAL"/>
+                <article>
+                  <header>
+                    <span>GENERIC</span>
+                    <code>
+                      <h4><a href="#VERBOSE:UPDATE-INTERVAL">UPDATE-INTERVAL</a></h4>
+                      <span/>
+                      <span>(ROTATING-LOG-FAUCET &amp;OPTIONAL)</span>
+                    </code>
+                  </header>
+                  <pre>Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:WITH-CONTROLLER-LOCK"/>
+                <article>
+                  <header>
+                    <span>MACRO</span>
+                    <code>
+                      <h4><a href="#VERBOSE:WITH-CONTROLLER-LOCK">WITH-CONTROLLER-LOCK</a></h4>
+                      <span/>
+                      <span>((&amp;OPTIONAL (CONTROLLER (QUOTE *GLOBAL-CONTROLLER*))) &amp;BODY FORMS)</span>
+                    </code>
+                  </header>
+                  <pre>Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:WITH-MUFFLED-LOGGING"/>
+                <article>
+                  <header>
+                    <span>MACRO</span>
+                    <code>
+                      <h4><a href="#VERBOSE:WITH-MUFFLED-LOGGING">WITH-MUFFLED-LOGGING</a></h4>
+                      <span/>
+                      <span>((&amp;OPTIONAL (CATEGORY T) &amp;REST MORE-CATEGORIES) &amp;BODY BODY)</span>
+                    </code>
+                  </header>
+                  <pre>Muffles all messages of CATEGORY within BODY.
+This means that all logging statements that fit CATEGORY within the BODY
+are not actually ever handed to the pipeline. If CATEGORY is T, all
+messages are muffled.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:*GLOBAL-CONTROLLER*"/>
+                <article>
+                  <header>
+                    <span>SPECIAL</span>
+                    <code>
+                      <h4><a href="#VERBOSE:*GLOBAL-CONTROLLER*">*GLOBAL-CONTROLLER*</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Global variable holding the current verbose controller instance and pipeline..</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:*LEVELS*"/>
+                <article>
+                  <header>
+                    <span>SPECIAL</span>
+                    <code>
+                      <h4><a href="#VERBOSE:*LEVELS*">*LEVELS*</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest.</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:*MUFFLED-CATEGORIES*"/>
+                <article>
+                  <header>
+                    <span>SPECIAL</span>
+                    <code>
+                      <h4><a href="#VERBOSE:*MUFFLED-CATEGORIES*">*MUFFLED-CATEGORIES*</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).</pre>
+                </article>
+              </li><li>
+                <a name="VERBOSE:*REPL-FAUCET-TIMESTAMP*"/>
+                <article>
+                  <header>
+                    <span>SPECIAL</span>
+                    <code>
+                      <h4><a href="#VERBOSE:*REPL-FAUCET-TIMESTAMP*">*REPL-FAUCET-TIMESTAMP*</a></h4>
+                      <span/>
+                      <span/>
+                    </code>
+                  </header>
+                  <pre>Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.</pre>
+                </article>
+              </li></ul>
           </li></ul>
       </article>
     </div>
