@@ -4,7 +4,7 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(in-package :verbose)
+(in-package #:org.shirakumo.verbose)
 
 (defvar *global-controller* NIL "Global variable holding the current verbose controller instance and pipeline..")
 (defvar *muffled-categories* NIL "Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).")
@@ -78,10 +78,10 @@ be put onto the pipeline at all."
     (with-controller-lock ()
       (setf (gethash symbol (shares *global-controller*)) val))))
 
-(defmacro with-muffled-logging ((&optional (category T)) &body body)
+(defmacro with-muffled-logging ((&optional (category T) &rest more-categories) &body body)
   "Muffles all messages of CATEGORY within BODY.
 This means that all logging statements that fit CATEGORY within the BODY
 are not actually ever handed to the pipeline. If CATEGORY is T, all
 messages are muffled."
-  `(let ((*muffled-categories* (cons ,category *muffled-categories*)))
+  `(let ((*muffled-categories* (list* ,category ,@more-categories *muffled-categories*)))
      ,@body))
