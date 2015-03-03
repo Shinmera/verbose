@@ -38,6 +38,7 @@
    #:message-thread
    #:message-level
    #:message-category
+   #:message-categories
    #:message-content
    #:message-visible
    #:log-message

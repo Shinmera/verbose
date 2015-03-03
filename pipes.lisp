@@ -28,10 +28,10 @@
   message)
 
 (defmethod format-message ((faucet repl-faucet) message)
-  (format T "~&LOG: ~a [~5,a] <~a>: ~a~%"
+  (format T "~&LOG: ~a [~5,a] ~{<~a>~}: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
-          (message-category message)
+          (message-categories message)
           (message-content message))
   (finish-output))
 
@@ -101,10 +101,10 @@
   message)
 
 (defmethod format-message ((stream stream) message)
-  (format stream "~&~a [~5,a] <~a>: ~a~%"
+  (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
-          (message-category message)
+          (message-categories message)
           (message-content message)))
 
 ;;
@@ -117,13 +117,14 @@
 
 (defmethod pass ((filter category-filter) (message message))
   (when (or (eql (categories filter) T)
-            (find (message-category message) (categories filter)))
+            (loop for category in (categories filter)
+                  thereis (find category (message-categories message))))
     message))
 
 (defclass category-tree-filter (category-filter) ()
   (:documentation "A pipe filter that only lets messages through whose category matches by tree."))
 
-(defun %matching-tree-category (category filter)
+(defun %matching-tree-category (filter category)
   (let ((category-leaves (split-sequence #\. (string-upcase category)))
         (filter-leaves (split-sequence #\. (string-upcase filter))))
     (loop for catl in category-leaves
@@ -139,5 +140,6 @@
 
 (defmethod pass ((filter category-tree-filter) (message message))
   (when (or (eql (categories filter) T)
-            (find (message-category message) (categories filter) :test #'%matching-tree-category))
+            (loop for category in (categories filter)
+                  thereis (find category (message-categories message) :test #'%matching-tree-category)))
     message))

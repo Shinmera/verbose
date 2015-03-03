@@ -60,7 +60,8 @@ near-instant.
 Also note that, depending on *MUFFLED-CATEGORIES*, some messages may not actually
 be put onto the pipeline at all."
   (unless (or (find T *muffled-categories*)
-              (find (message-category message) *muffled-categories*))
+              (loop for category in *muffled-categories*
+                    thereis (find category (message-categories message))))
     (with-controller-lock (controller)
       (vector-push-extend message (message-pipe controller)))
     (condition-notify (message-condition controller)))
