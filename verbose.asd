@@ -4,16 +4,14 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(defpackage org.tymoonnext.radiance.lib.verbose.asd
-  (:use :cl :asdf))
-(in-package :org.tymoonnext.radiance.lib.verbose.asd)
-
-(defsystem verbose
+(in-package #:cl-user)
+(asdf:defsystem verbose
   :name "Verbose"
-  :version "1.0.0"
+  :version "1.1.0"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
   :description "A logging framework using the piping library."
+  :homepage "https://github.com/Shinmera/verbose"
   :serial T
   :components ((:file "package")
                (:file "controller")
@@ -26,8 +24,3 @@
                :split-sequence
                :cl-fad
                :clon))
-
-;; (defsystem verbose-doc
-;;   :name "Verbose Doc"
-;;   :components ((:file "documentation"))
-;;   :depends-on (:verbose :lquery-doc))
