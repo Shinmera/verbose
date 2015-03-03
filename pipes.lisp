@@ -4,7 +4,7 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(in-package :verbose)
+(in-package #:org.shirakumo.verbose)
 
 ;;
 ;; REPL

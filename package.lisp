@@ -4,9 +4,10 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
+(in-package #:cl-user)
 (push :verbose *features*)
-(defpackage #:org.tymoonnext.radiance.lib.verbose
-  (:nicknames #:verbose #:v)
+(defpackage #:verbose
+  (:nicknames #:v #:org.shirakumo.verbose)
   (:use :cl :bordeaux-threads :piping :split-sequence)
   (:shadow #:LOG #:ERROR #:WARN #:DEBUG #:TRACE)
   ;; controller.lisp

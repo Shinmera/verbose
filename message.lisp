@@ -4,7 +4,7 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(in-package :verbose)
+(in-package #:org.shirakumo.verbose)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)
