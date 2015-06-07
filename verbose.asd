@@ -22,5 +22,5 @@
                :local-time
                :bordeaux-threads
                :split-sequence
-               :cl-fad
-               :clon))
+               :clon
+               :dissect))

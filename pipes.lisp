@@ -6,6 +6,8 @@
 
 (in-package #:org.shirakumo.verbose)
 
+(defvar *verbose-conditions* T)
+
 ;;
 ;; REPL
 ;;
@@ -32,8 +34,17 @@
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
           (message-categories message)
-          (message-content message))
+          (format-message NIL (message-content message)))
   (finish-output))
+
+(defmethod format-message ((nothing null) message)
+  message)
+
+(defmethod format-message ((nothing null) (message condition))
+  (if *verbose-conditions*
+      (with-output-to-string (stream)
+        (dissect:present message stream))
+      (call-next-method)))
 
 ;;
 ;; CRON
@@ -72,7 +83,7 @@
                                  (local-time:format-timestring NIL (local-time:now) :format (time-format faucet))
                                  (pathname-name (faucet-file faucet)))
                          (faucet-file faucet)))
-  (ensure-directories-exist (cl-fad:pathname-directory-pathname (faucet-file faucet)))
+  (ensure-directories-exist (faucet-file faucet))
   (v:info :verbose.log "Rotated to new file ~a" (current-file faucet)))
 
 (defgeneric update-interval (rotating-log-faucet &optional (cron-interval))

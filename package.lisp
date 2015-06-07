@@ -53,6 +53,7 @@
    #:TRACE)
   ;; pipes.lisp
   (:export
+   #:*verbose-conditions*
    #:*repl-faucet-timestamp*
    #:format-message
    #:repl-faucet
