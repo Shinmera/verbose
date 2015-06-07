@@ -20,7 +20,7 @@
   <body>
     <header>
       <h1><img src="verbose-logo.png" alt="verbose"/></h1>
-      <span>1.1.0</span>
+      <span>1.2.0</span>
       <p>A logging framework using the piping library.</p>
     </header>
     <div id="content">
@@ -33,16 +33,23 @@
 <pre><code>(ql:quickload :verbose)
 </code></pre>
 
-<p>By default, a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:</p>
+<p>By default --if threading is available-- a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:</p>
 
-<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :TEST &quot;Hello world!&quot;)
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :test &quot;Hello world!&quot;)
 =&gt; LOG: 2014-04-01 13:32:49 [INFO ] &lt;TEST&gt;: Hello world!
 </code></pre>
 
-<p>Each logging statement expects a category and a format string. Optionally you can pass in format arguments:</p>
+<p>Each logging statement expects a category and a datum. The simplest case for a datum is a format string:</p>
 
-<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :TEST &quot;2+2=~f&quot; (<a href="http://l1sp.org/cl/+">+</a> 2 2))
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :test &quot;2+2=~f&quot; (<a href="http://l1sp.org/cl/+">+</a> 2 2))
 =&gt; LOG: 2014-04-01 13:33:20 [INFO ] &lt;TEST&gt;: 2+2=4.0
+</code></pre>
+
+<p>However, you can also pass in different objects, as well as extend the behaviour by adding methods to <code><a href="#VERBOSE:LOG">log</a></code>:</p>
+
+<pre><code>(<a href="#VERBOSE:INFO">v:info</a> :test (<a href="http://l1sp.org/cl/make-condition">make-condition</a> 'error))
+(<a href="#VERBOSE:INFO">v:info</a> :test 'simple-error :format-control &quot;Hey!&quot;)
+(<a href="#VERBOSE:INFO">v:info</a> :test #'bt:current-thread)
 </code></pre>
 
 <p>You can change the logging level of the REPL-Faucet easily. The available levels by default are <code>:FATAL</code> <code>:SEVERE</code> <code>:ERROR</code> <code>:WARN</code> <code>:INFO</code> <code>:DEBUG</code> <code>:TRACE</code>.</p>
@@ -65,7 +72,7 @@
 =&gt; LOG: 2014-04-01 13:51:52 [INFO ] &lt;SYSTEM&gt;&lt;SERVER&gt;: Starting up!
 </code></pre>
 
-<p>Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use shared-instance, which is SETFable. One shared-instance that is most likely of interest to everyone is saved under the symbol <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code>. Setting this anew is useful if you start a new REPL session and need to redirect logging to it. The <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code> and <code><a href="http://l1sp.org/cl/*error-output*">*error-output*</a></code> shared-instances are handled specially and their values are bound to their respective special variables during message passing.</p>
+<p>Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use <code><a href="#VERBOSE:SHARE">share</a></code>, which is SETFable. One <code><a href="#VERBOSE:SHARE">share</a></code> that is most likely of interest to everyone is saved under the symbol <code><a href="http://l1sp.org/cl/*standard-output*">*standard-output*</a></code>. Setting this anew is useful if you start a new REPL session and need to redirect logging to it.</p>
 
 <pre><code>(<a href="http://l1sp.org/cl/setf">setf</a> (<a href="#VERBOSE:SHARED-INSTANCE">v:shared-instance</a> '*standard-output*) *standard-output*)
 </code></pre>
@@ -100,666 +107,830 @@
 (piping:pipeline v:*global-controller*))
 </code></pre>
 
-<p>See the documentation of <a href="http://shinmera.github.io/piping/">Piping</a> for more information.</p>
+<p>See the documentation of  for more information.</p>
+
+<h2>Also See</h2>
+
+<ul>
+<li><a href="http://shinmera.github.io/piping/">Piping</a> Dynamic pipelines</li>
+<li><a href="http://shinmera.github.io/dissect/">Dissect</a> Conditions and stack-frame analysis</li>
+</ul>
 </span>
         </c:documentate>
       </article>
       <article>
-        <h2>Copyright</h2>
-        <span>verbose</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license and ©<span>2015</span> <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span>. This library can be obtained on <a href="https://github.com/Shinmera/verbose">https://github.com/Shinmera/verbose</a>.
+        
+          <h2>Copyright</h2>
+          <span>verbose</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license.
+          
+            © <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span>
+            .
+          
+          This library can be obtained on <a href="https://github.com/Shinmera/verbose">https://github.com/Shinmera/verbose</a>.
+        
       </article>
-      <article id="symbol-index">
-        <h2>Package Index</h2>
-        <ul><li class="package">
-            <h3>
-              <a name="VERBOSE" href="#VERBOSE">VERBOSE</a>
-              <span class="nicknames">(ORG.SHIRAKUMO.VERBOSE V)</span>
-            </h3>
-            <ul><li>
-                <a name="VERBOSE:CATEGORIES"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:CATEGORIES">CATEGORIES</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:CURRENT-FILE"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:CURRENT-FILE">CURRENT-FILE</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:FAUCET-FILE"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:FAUCET-FILE">FAUCET-FILE</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:INTERVAL"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:INTERVAL">INTERVAL</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-CATEGORIES"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-CATEGORIES">MESSAGE-CATEGORIES</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-CONTENT"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-CONTENT">MESSAGE-CONTENT</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-LEVEL"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-LEVEL">MESSAGE-LEVEL</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-THREAD"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-THREAD">MESSAGE-THREAD</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-TIME"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-TIME">MESSAGE-TIME</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:REPL-CATEGORIES"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:REPL-CATEGORIES">REPL-CATEGORIES</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Returns the list of allowed log categories of the standard category-tree-filter.
+      
+        <article id="symbol-index">
+          <h2>Package Index</h2>
+          <ul><li class="package">
+              <h3>
+                <a name="VERBOSE" href="#VERBOSE">VERBOSE</a>
+                <span class="nicknames">(ORG.SHIRAKUMO.VERBOSE V)</span>
+              </h3>
+              <ul><li>
+                  <a name="VERBOSE:*GLOBAL-CONTROLLER*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#VERBOSE:*GLOBAL-CONTROLLER*" class="name">*GLOBAL-CONTROLLER*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Global variable holding the current verbose controller instance and pipeline.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:*LEVELS*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#VERBOSE:*LEVELS*" class="name">*LEVELS*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:*MUFFLED-CATEGORIES*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#VERBOSE:*MUFFLED-CATEGORIES*" class="name">*MUFFLED-CATEGORIES*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:*REPL-FAUCET-TIMESTAMP*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#VERBOSE:*REPL-FAUCET-TIMESTAMP*" class="name">*REPL-FAUCET-TIMESTAMP*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:*VERBOSE-CONDITIONS*"/>
+                  <article>
+                    <header class="special">
+                      <span class="type">special</span>
+                      <code>
+                        <h4><a href="#VERBOSE:*VERBOSE-CONDITIONS*" class="name">*VERBOSE-CONDITIONS*</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Wether to report conditions verbosely using DISSECT:PRESENT.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CATEGORY-FILTER"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CATEGORY-FILTER" class="name">CATEGORY-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">A simple pipe filter that only lets through matching categories.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CATEGORY-TREE-FILTER"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CATEGORY-TREE-FILTER" class="name">CATEGORY-TREE-FILTER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">A pipe filter that only lets messages through whose category matches by tree.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CONDITION-MESSAGE"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CONDITION-MESSAGE" class="name">CONDITION-MESSAGE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Message object that carries a condition object.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CONTROLLER"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CONTROLLER" class="name">CONTROLLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Main controller class that holds the logging pipeline, thread and shares.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE" class="name">MESSAGE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Message object to be passed around the system.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:REPL-FAUCET"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:REPL-FAUCET" class="name">REPL-FAUCET</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">A simple logging faucet that prints log messages to the *standard-output*</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:ROTATING-LOG-FAUCET"/>
+                  <article>
+                    <header class="class">
+                      <span class="type">class</span>
+                      <code>
+                        <h4><a href="#VERBOSE:ROTATING-LOG-FAUCET" class="name">ROTATING-LOG-FAUCET</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">A file logger that rotates at the given (cron) interval.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CATEGORIES"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CATEGORIES" class="name">CATEGORIES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:CURRENT-FILE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:CURRENT-FILE" class="name">CURRENT-FILE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:FAUCET-FILE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:FAUCET-FILE" class="name">FAUCET-FILE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:INTERVAL"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:INTERVAL" class="name">INTERVAL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-CATEGORIES"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-CATEGORIES" class="name">MESSAGE-CATEGORIES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-CONDITION"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-CONDITION" class="name">MESSAGE-CONDITION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-CONTENT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-CONTENT" class="name">MESSAGE-CONTENT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-LEVEL"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-LEVEL" class="name">MESSAGE-LEVEL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-THREAD"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-THREAD" class="name">MESSAGE-THREAD</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-TIME"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-TIME" class="name">MESSAGE-TIME</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:REPL-CATEGORIES"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:REPL-CATEGORIES" class="name">REPL-CATEGORIES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Returns the list of allowed log categories of the standard category-tree-filter.
 If NIL is returned, anything is passed.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:REPL-LEVEL"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:REPL-LEVEL">REPL-LEVEL</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Returns the current logging level of the standard repl faucet.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:SHARED-INSTANCE"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:SHARED-INSTANCE">SHARED-INSTANCE</a></h4>
-                      <span/>
-                      <span>(SYMBOL)</span>
-                    </code>
-                  </header>
-                  <pre>Return a shared instance identified by the symbol.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:TIME-FORMAT"/>
-                <article>
-                  <header>
-                    <span>ACCESSOR</span>
-                    <code>
-                      <h4><a href="#VERBOSE:TIME-FORMAT">TIME-FORMAT</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:CATEGORY-FILTER"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:CATEGORY-FILTER">CATEGORY-FILTER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>A simple pipe filter that only lets through matching categories.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:CATEGORY-TREE-FILTER"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:CATEGORY-TREE-FILTER">CATEGORY-TREE-FILTER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>A pipe filter that only lets messages through whose category matches by tree.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:CONTROLLER"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:CONTROLLER">CONTROLLER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Main controller class that holds the logging pipeline, thread and shares.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE">MESSAGE</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Message object to be passed around the system.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:REPL-FAUCET"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:REPL-FAUCET">REPL-FAUCET</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>A simple logging faucet that prints log messages to the *standard-output*</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:ROTATING-LOG-FAUCET"/>
-                <article>
-                  <header>
-                    <span>CLASS</span>
-                    <code>
-                      <h4><a href="#VERBOSE:ROTATING-LOG-FAUCET">ROTATING-LOG-FAUCET</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>A file logger that rotates at the given (cron) interval.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:ADD-PIPE"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:ADD-PIPE">ADD-PIPE</a></h4>
-                      <span/>
-                      <span>(&amp;REST SEGMENTS)</span>
-                    </code>
-                  </header>
-                  <pre>Add a new pipe with the given segments.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:ADD-REPL-CATEGORY"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:ADD-REPL-CATEGORY">ADD-REPL-CATEGORY</a></h4>
-                      <span/>
-                      <span>(CATEGORY)</span>
-                    </code>
-                  </header>
-                  <pre>Add a new repl category to allow.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:DEBUG"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:DEBUG">DEBUG</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:ERROR"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:ERROR">ERROR</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:FATAL"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:FATAL">FATAL</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:INFO"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:INFO">INFO</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:LOG"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:LOG">LOG</a></h4>
-                      <span/>
-                      <span>(LEVEL CATEGORIES FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre>Logs a new message under given level and categories, using the format-string and arguments as message text.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:LOG-MESSAGE"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:LOG-MESSAGE">LOG-MESSAGE</a></h4>
-                      <span/>
-                      <span>(LEVEL CATEGORIES CONTENT)</span>
-                    </code>
-                  </header>
-                  <pre>Logs a message with the given parameters.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:LOG-OBJECT"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:LOG-OBJECT">LOG-OBJECT</a></h4>
-                      <span/>
-                      <span>(OBJECT)</span>
-                    </code>
-                  </header>
-                  <pre>Shorthand for (pass *global-controller* object)</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MAKE-CRON-INTERVAL"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MAKE-CRON-INTERVAL">MAKE-CRON-INTERVAL</a></h4>
-                      <span/>
-                      <span>(STRING)</span>
-                    </code>
-                  </header>
-                  <pre>Parse a cron interval.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER">MAKE-STANDARD-GLOBAL-CONTROLLER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Creates a new standard global controller construct with a setup pipeline.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:OUTPUT-HERE"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:OUTPUT-HERE">OUTPUT-HERE</a></h4>
-                      <span/>
-                      <span>(&amp;OPTIONAL (STANDARD-OUTPUT *STANDARD-OUTPUT*))</span>
-                    </code>
-                  </header>
-                  <pre>Set the *standard-output* shared instance to STANDARD-OUTPUT, effectively
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:REPL-LEVEL"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:REPL-LEVEL" class="name">REPL-LEVEL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Returns the current logging level of the standard repl faucet.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:SHARE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:SHARE" class="name">SHARE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME &amp;OPTIONAL (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Return the value of a shared special variable.
+
+Shared bindings are special variable bindings that are active during the message
+passing in the controller's logging thread. This allows you to influence various
+behaviours of the pipeline, such as where and how the messages are printed.
+
+This is thread-safe.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:SHARED-INSTANCE"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:SHARED-INSTANCE" class="name">SHARED-INSTANCE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(NAME &amp;OPTIONAL (CONTROLLER *GLOBAL-CONTROLLER*))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Return the value of a shared special variable.
+
+Shared bindings are special variable bindings that are active during the message
+passing in the controller's logging thread. This allows you to influence various
+behaviours of the pipeline, such as where and how the messages are printed.
+
+This is thread-safe.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:TIME-FORMAT"/>
+                  <article>
+                    <header class="accessor">
+                      <span class="type">accessor</span>
+                      <code>
+                        <h4><a href="#VERBOSE:TIME-FORMAT" class="name">TIME-FORMAT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:ADD-PIPE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:ADD-PIPE" class="name">ADD-PIPE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;REST SEGMENTS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Add a new pipe with the given segments.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:ADD-REPL-CATEGORY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:ADD-REPL-CATEGORY" class="name">ADD-REPL-CATEGORY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Add a new repl category to allow.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:DEBUG"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:DEBUG" class="name">DEBUG</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:ERROR"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:ERROR" class="name">ERROR</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:FATAL"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:FATAL" class="name">FATAL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:INFO"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:INFO" class="name">INFO</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:LOG-CONDITION"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:LOG-CONDITION" class="name">LOG-CONDITION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(LEVEL CATEGORIES CONDITION)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:LOG-MESSAGE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:LOG-MESSAGE" class="name">LOG-MESSAGE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(LEVEL CATEGORIES CONTENT &amp;OPTIONAL (CLASS 'MESSAGE) &amp;REST INITARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Logs a message with the given parameters.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:LOG-OBJECT"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:LOG-OBJECT" class="name">LOG-OBJECT</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(OBJECT)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Shorthand for (pass *global-controller* object)</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MAKE-CRON-INTERVAL"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MAKE-CRON-INTERVAL" class="name">MAKE-CRON-INTERVAL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(STRING)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Parse a cron interval.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MAKE-STANDARD-GLOBAL-CONTROLLER" class="name">MAKE-STANDARD-GLOBAL-CONTROLLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Creates a new standard global controller construct with a setup pipeline.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:OUTPUT-HERE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:OUTPUT-HERE" class="name">OUTPUT-HERE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(&amp;OPTIONAL (STANDARD-OUTPUT *STANDARD-OUTPUT*))</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Set the *standard-output* shared instance to STANDARD-OUTPUT, effectively
 redirecting output from the logger thread to the specified stream.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:REMOVE-GLOBAL-CONTROLLER"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:REMOVE-GLOBAL-CONTROLLER">REMOVE-GLOBAL-CONTROLLER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Attempts to destroy the thread of the controller and remove it.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:REMOVE-REPL-CATEGORY"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:REMOVE-REPL-CATEGORY">REMOVE-REPL-CATEGORY</a></h4>
-                      <span/>
-                      <span>(CATEGORY)</span>
-                    </code>
-                  </header>
-                  <pre>Remove an existing repl category.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:RESTART-GLOBAL-CONTROLLER"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:RESTART-GLOBAL-CONTROLLER">RESTART-GLOBAL-CONTROLLER</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Removes the controller and creates a new one in its place.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:SEVERE"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:SEVERE">SEVERE</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:TRACE"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:TRACE">TRACE</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:WARN"/>
-                <article>
-                  <header>
-                    <span>FUNCTION</span>
-                    <code>
-                      <h4><a href="#VERBOSE:WARN">WARN</a></h4>
-                      <span/>
-                      <span>(CATEGORY FORMAT-STRING &amp;REST FORMAT-ARGS)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:FORMAT-MESSAGE"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:FORMAT-MESSAGE">FORMAT-MESSAGE</a></h4>
-                      <span/>
-                      <span>(FAUCET MESSAGE)</span>
-                    </code>
-                  </header>
-                  <pre>Wrapper around pass to potentially be overwritten if the output format should be changed.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-CATEGORY"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-CATEGORY">MESSAGE-CATEGORY</a></h4>
-                      <span/>
-                      <span>(MESSAGE)</span>
-                    </code>
-                  </header>
-                  <pre/>
-                </article>
-              </li><li>
-                <a name="VERBOSE:MESSAGE-VISIBLE"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:MESSAGE-VISIBLE">MESSAGE-VISIBLE</a></h4>
-                      <span/>
-                      <span>(MESSAGE LEVEL)</span>
-                    </code>
-                  </header>
-                  <pre>Returns T if the message is visible under the given level.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:ROTATE-LOG"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:ROTATE-LOG">ROTATE-LOG</a></h4>
-                      <span/>
-                      <span>(ROTATING-LOG-FAUCET)</span>
-                    </code>
-                  </header>
-                  <pre>Initiate a log rotation immediately. This does not influence the automatic rotation interval.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:STOP-ROTATION"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:STOP-ROTATION">STOP-ROTATION</a></h4>
-                      <span/>
-                      <span>(ROTATING-LOG-FAUCET)</span>
-                    </code>
-                  </header>
-                  <pre>Stops the rotation. Logging will still continue on the current file.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:UPDATE-INTERVAL"/>
-                <article>
-                  <header>
-                    <span>GENERIC</span>
-                    <code>
-                      <h4><a href="#VERBOSE:UPDATE-INTERVAL">UPDATE-INTERVAL</a></h4>
-                      <span/>
-                      <span>(ROTATING-LOG-FAUCET &amp;OPTIONAL)</span>
-                    </code>
-                  </header>
-                  <pre>Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:WITH-CONTROLLER-LOCK"/>
-                <article>
-                  <header>
-                    <span>MACRO</span>
-                    <code>
-                      <h4><a href="#VERBOSE:WITH-CONTROLLER-LOCK">WITH-CONTROLLER-LOCK</a></h4>
-                      <span/>
-                      <span>((&amp;OPTIONAL (CONTROLLER (QUOTE *GLOBAL-CONTROLLER*))) &amp;BODY FORMS)</span>
-                    </code>
-                  </header>
-                  <pre>Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:WITH-MUFFLED-LOGGING"/>
-                <article>
-                  <header>
-                    <span>MACRO</span>
-                    <code>
-                      <h4><a href="#VERBOSE:WITH-MUFFLED-LOGGING">WITH-MUFFLED-LOGGING</a></h4>
-                      <span/>
-                      <span>((&amp;OPTIONAL (CATEGORY T) &amp;REST MORE-CATEGORIES) &amp;BODY BODY)</span>
-                    </code>
-                  </header>
-                  <pre>Muffles all messages of CATEGORY within BODY.
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:REMOVE-GLOBAL-CONTROLLER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:REMOVE-GLOBAL-CONTROLLER" class="name">REMOVE-GLOBAL-CONTROLLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Attempts to destroy the thread of the controller and remove it.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:REMOVE-REPL-CATEGORY"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:REMOVE-REPL-CATEGORY" class="name">REMOVE-REPL-CATEGORY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Remove an existing repl category.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:RESTART-GLOBAL-CONTROLLER"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:RESTART-GLOBAL-CONTROLLER" class="name">RESTART-GLOBAL-CONTROLLER</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">()</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Removes the controller and creates a new one in its place.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:SET-STANDARD-SPECIAL-VALUES"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:SET-STANDARD-SPECIAL-VALUES" class="name">SET-STANDARD-SPECIAL-VALUES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTROLLER)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Set all standard special values from CL as shared bindings.
+
+See COPY-BINDINGS.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:SEVERE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:SEVERE" class="name">SEVERE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:TRACE"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:TRACE" class="name">TRACE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:WARN"/>
+                  <article>
+                    <header class="function">
+                      <span class="type">function</span>
+                      <code>
+                        <h4><a href="#VERBOSE:WARN" class="name">WARN</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CATEGORY DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:FORMAT-MESSAGE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:FORMAT-MESSAGE" class="name">FORMAT-MESSAGE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(FAUCET MESSAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Wrapper around pass to potentially be overwritten if the output format should be changed.
+This serves a dual purpose: First it allows writers of faucets to customise
+their output representation. Secondly, it coerces the actual message content
+into a string to output.
+
+By default, the following methods are defined:
+(REPL-FAUCET MESSAGE) print to the repl, using (NIL content) to coerce the content.
+(STREAM MESSAGE)
+(NIL CONDITION)       if *VERBOSE-CONDITIONS* is T, (DISSECT:PRESENT message) is
+                      used as the output. Otherwise, the message itself is returned
+                      directly.
+(NIL FUNCTION)        call the message function and return its result.
+(NIL T)               simply return the message.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:LOG"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:LOG" class="name">LOG</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(LEVEL CATEGORIES DATUM &amp;REST DATUM-ARGS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Logs a new message under given level and categories, using the datum and datum-args to construct the content.
+
+The following datum classes are recognised by default:
+STRING     -- Construct the content through FORMAT with datum and datum-args.
+SYMBOL     -- If datum names a condition class, MAKE-CONDITION is called with
+              the datum and datum-args. Otherwise MAKE-INSTANCE is used. LOG
+              is subsequently called /again/ with the resulting instance as
+              the new datum. This ensures that dispatching happens as usual.
+FUNCTION   -- Use a (lambda () (apply datum datum-args)) as the content.
+              By default this means that the given function will be called
+              within the controller thread. See FORMAT-MESSAGE. Be aware
+              that this means the function will be executed at least once
+              for each faucet, and potentially arbitrary times to perform
+              the pipelinging.
+T          -- Discard the datum-args and use datum directly as content.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-CATEGORY"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-CATEGORY" class="name">MESSAGE-CATEGORY</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(MESSAGE)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring"/>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:MESSAGE-VISIBLE"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:MESSAGE-VISIBLE" class="name">MESSAGE-VISIBLE</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(MESSAGE LEVEL)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Returns T if the message is visible under the given level.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:ROTATE-LOG"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:ROTATE-LOG" class="name">ROTATE-LOG</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ROTATING-LOG-FAUCET)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Initiate a log rotation immediately. This does not influence the automatic rotation interval.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:STOP-ROTATION"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:STOP-ROTATION" class="name">STOP-ROTATION</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ROTATING-LOG-FAUCET)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Stops the rotation. Logging will still continue on the current file.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:UPDATE-INTERVAL"/>
+                  <article>
+                    <header class="generic">
+                      <span class="type">generic</span>
+                      <code>
+                        <h4><a href="#VERBOSE:UPDATE-INTERVAL" class="name">UPDATE-INTERVAL</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(ROTATING-LOG-FAUCET &amp;OPTIONAL)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:COPY-BINDINGS"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#VERBOSE:COPY-BINDINGS" class="name">COPY-BINDINGS</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">(CONTROLLER &amp;BODY VARIABLES)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Copy all the values of VARIABLEs over to shared bindings in the CONTROLLER.
+
+See (SETF SHARE).</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:WITH-CONTROLLER-LOCK"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#VERBOSE:WITH-CONTROLLER-LOCK" class="name">WITH-CONTROLLER-LOCK</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((&amp;OPTIONAL (CONTROLLER '*GLOBAL-CONTROLLER*)) &amp;BODY FORMS)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots.</pre>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:WITH-MUFFLED-LOGGING"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#VERBOSE:WITH-MUFFLED-LOGGING" class="name">WITH-MUFFLED-LOGGING</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((&amp;OPTIONAL (CATEGORY T) &amp;REST MORE-CATEGORIES) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Muffles all messages of CATEGORY within BODY.
 This means that all logging statements that fit CATEGORY within the BODY
 are not actually ever handed to the pipeline. If CATEGORY is T, all
 messages are muffled.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:*GLOBAL-CONTROLLER*"/>
-                <article>
-                  <header>
-                    <span>SPECIAL</span>
-                    <code>
-                      <h4><a href="#VERBOSE:*GLOBAL-CONTROLLER*">*GLOBAL-CONTROLLER*</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Global variable holding the current verbose controller instance and pipeline..</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:*LEVELS*"/>
-                <article>
-                  <header>
-                    <span>SPECIAL</span>
-                    <code>
-                      <h4><a href="#VERBOSE:*LEVELS*">*LEVELS*</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest.</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:*MUFFLED-CATEGORIES*"/>
-                <article>
-                  <header>
-                    <span>SPECIAL</span>
-                    <code>
-                      <h4><a href="#VERBOSE:*MUFFLED-CATEGORIES*">*MUFFLED-CATEGORIES*</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).</pre>
-                </article>
-              </li><li>
-                <a name="VERBOSE:*REPL-FAUCET-TIMESTAMP*"/>
-                <article>
-                  <header>
-                    <span>SPECIAL</span>
-                    <code>
-                      <h4><a href="#VERBOSE:*REPL-FAUCET-TIMESTAMP*">*REPL-FAUCET-TIMESTAMP*</a></h4>
-                      <span/>
-                      <span/>
-                    </code>
-                  </header>
-                  <pre>Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.</pre>
-                </article>
-              </li></ul>
-          </li></ul>
-      </article>
+                  </article>
+                </li><li>
+                  <a name="VERBOSE:WITH-SHARES"/>
+                  <article>
+                    <header class="macro">
+                      <span class="type">macro</span>
+                      <code>
+                        <h4><a href="#VERBOSE:WITH-SHARES" class="name">WITH-SHARES</a></h4>
+                        <span class="qualifiers"></span>
+                        <span class="arguments">((&amp;OPTIONAL (CONTROLLER '*GLOBAL-CONTROLLER*)) &amp;BODY BODY)</span>
+                      </code>
+                    </header>
+                    <pre class="docstring">Binds all shared special variables of CONTROLLER within BODY.
+
+See SHARE.</pre>
+                  </article>
+                </li></ul>
+            </li></ul>
+        </article>
+      
     </div>
   </body>
 </html>

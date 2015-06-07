@@ -3,15 +3,21 @@ Load Verbose with ASDF or Quicklisp.
 
     (ql:quickload :verbose)
 
-By default, a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:
+By default --if threading is available-- a new logging thread is already started and set up with a REPL-Faucet on the INFO level, that simply prints log messages from the INFO level and above to the standard output:
 
-    (v:info :TEST "Hello world!")
+    (v:info :test "Hello world!")
     => LOG: 2014-04-01 13:32:49 [INFO ] <TEST>: Hello world!
 
-Each logging statement expects a category and a format string. Optionally you can pass in format arguments:
+Each logging statement expects a category and a datum. The simplest case for a datum is a format string:
 
-    (v:info :TEST "2+2=~f" (+ 2 2))
+    (v:info :test "2+2=~f" (+ 2 2))
     => LOG: 2014-04-01 13:33:20 [INFO ] <TEST>: 2+2=4.0
+
+However, you can also pass in different objects, as well as extend the behaviour by adding methods to `log`:
+
+    (v:info :test (make-condition 'error))
+    (v:info :test 'simple-error :format-control "Hey!")
+    (v:info :test #'bt:current-thread)
 
 You can change the logging level of the REPL-Faucet easily. The available levels by default are `:FATAL` `:SEVERE` `:ERROR` `:WARN` `:INFO` `:DEBUG` `:TRACE`.
 
@@ -30,7 +36,7 @@ Verbose also allows you to pass as many categories as you want. This permits to 
     (v:info '(:system :server) "Starting up!")
     => LOG: 2014-04-01 13:51:52 [INFO ] <SYSTEM><SERVER>: Starting up!
 
-Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use shared-instance, which is SETFable. One shared-instance that is most likely of interest to everyone is saved under the symbol `*standard-output*`. Setting this anew is useful if you start a new REPL session and need to redirect logging to it. The `*standard-output*` and `*error-output*` shared-instances are handled specially and their values are bound to their respective special variables during message passing.
+Log message passing through the pipeline happens in a separate thread. If you create new pipe segments for your logging pipeline that need to access some form of shared variable, you can use `share`, which is SETFable. One `share` that is most likely of interest to everyone is saved under the symbol `*standard-output*`. Setting this anew is useful if you start a new REPL session and need to redirect logging to it.
 
     (setf (v:shared-instance '*standard-output*) *standard-output*)
 
@@ -60,4 +66,8 @@ Using the piping constructs you can create complex logging systems or even chang
     (v:with-controller-lock ()
     (piping:pipeline v:*global-controller*))
 
-See the documentation of [Piping](http://shinmera.github.io/piping/) for more information.
+See the documentation of  for more information.
+
+## Also See
+* [Piping](http://shinmera.github.io/piping/) Dynamic pipelines
+* [Dissect](http://shinmera.github.io/dissect/) Conditions and stack-frame analysis

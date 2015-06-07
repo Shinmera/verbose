@@ -32,6 +32,7 @@
 
 (defclass condition-message (message)
   ((condition :initarg :condition :accessor message-condition))
+  (:documentation "Message object that carries a condition object.")
   (:default-initargs
    :condition (cl:error "CONDITION required.")))
 
