@@ -22,8 +22,8 @@
 
 (defun remove-global-controller ()
   "Attempts to destroy the thread of the controller and remove it."
-  (when (thread-alive-p (controller-thread *global-controller*))
-    (destroy-thread (controller-thread *global-controller*)))
+  (when (bt:thread-alive-p (controller-thread *global-controller*))
+    (bt:destroy-thread (controller-thread *global-controller*)))
   (setf *global-controller* NIL))
 
 (defun restart-global-controller ()

@@ -6,29 +6,30 @@
 
 (in-package #:org.shirakumo.verbose)
 
-(defvar *global-controller* NIL "Global variable holding the current verbose controller instance and pipeline..")
+(defvar *global-controller* NIL "Global variable holding the current verbose controller instance and pipeline.")
 (defvar *muffled-categories* NIL "Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).")
 
 (defclass controller (pipeline)
-  ((thread :accessor controller-thread)
+  ((thread :initform NIL :accessor controller-thread)
    (shares :initform (make-hash-table) :accessor shares)
-   (message-condition :initform (make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
+   (message-condition :initform (bt:make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
    (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
-   (message-lock :initform (make-lock "MESSAGE-LOCK") :reader message-lock))
+   (message-lock :initform (bt:make-lock "MESSAGE-LOCK") :reader message-lock))
   (:documentation "Main controller class that holds the logging pipeline, thread and shares."))
 
 (defmethod initialize-instance :after ((controller controller) &rest rest)
   (declare (ignore rest))
   (set-standard-special-values controller)
+  #+:thread-support
   (setf (controller-thread controller)
-        (make-thread #'controller-loop
-                     :name "CONTROLLER MESSAGE LOOP"
-                     :initial-bindings `((*global-controller* . ,controller)))))
+        (bt:make-thread #'controller-loop
+                        :name "CONTROLLER MESSAGE LOOP"
+                        :initial-bindings `((*global-controller* . ,controller)))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro with-controller-lock ((&optional (controller '*global-controller*)) &body forms)
     "Wraps the body into an environment with the thread lock for the controller acquired so it is safe to modify the pipeline or controller slots."
-    `(with-lock-held ((message-lock ,controller))
+    `(bt:with-lock-held ((message-lock ,controller))
        ,@forms)))
 
 (defun share (name &optional (controller *global-controller*))
@@ -135,18 +136,18 @@ See COPY-BINDINGS."
          (lock (message-lock controller))
          (condition (message-condition controller))
          (pipeline (pipeline controller)))
-    (acquire-lock lock)
+    (bt:acquire-lock lock)
     (loop do
       (with-simple-restart (skip "Skip processing the message.")
         (let ((queue (message-pipe controller)))
           (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
-          (release-lock lock)
+          (bt:release-lock lock)
           (with-shares (controller)
             (loop for message across queue
                   do (pass pipeline message)))))
-      (acquire-lock lock)
+      (bt:acquire-lock lock)
       (when (= 0 (length (message-pipe controller)))
-        (condition-wait condition lock)))))
+        (bt:condition-wait condition lock)))))
 
 (defmethod pass ((controller controller) message)
   "Pass a raw message into the controller pipeline. 
@@ -155,14 +156,26 @@ Note that this is not instant as the message passing is done in a separate threa
 This function returns as soon as the message is added to the queue, which should be
 near-instant.
 
+In the case that no live thread is available on the controller, either due to a lack
+of thread support entirely, or some other factor, the message is passed along to the
+pipeline directly. This will mean it is processed immediately, but it also means it
+will hold up the current thread.
+
 Also note that, depending on *MUFFLED-CATEGORIES*, some messages may not actually
 be put onto the pipeline at all."
   (unless (or (find T *muffled-categories*)
               (loop for category in *muffled-categories*
                     thereis (find category (message-categories message))))
-    (with-controller-lock (controller)
-      (vector-push-extend message (message-pipe controller)))
-    (condition-notify (message-condition controller)))
+    (cond ((and (controller-thread controller)
+                (bt:thread-alive-p (controller-thread controller)))
+           (with-controller-lock (controller)
+             (vector-push-extend message (message-pipe controller)))
+           (bt:condition-notify (message-condition controller)))
+          ;; If for some reason the thread is not around (maybe it broke, maybe
+          ;; there's no threads whatsoever) just pass it along directly.
+          (T
+           (with-shares (controller)
+             (pass (pipeline controller) message)))))
   NIL)
 
 (flet ((copy-function (from to)

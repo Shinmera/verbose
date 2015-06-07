@@ -8,7 +8,7 @@
 (push :verbose *features*)
 (defpackage #:verbose
   (:nicknames #:v #:org.shirakumo.verbose)
-  (:use :cl :bordeaux-threads :piping :split-sequence)
+  (:use :cl :piping :split-sequence)
   (:shadow #:LOG #:ERROR #:WARN #:DEBUG #:TRACE)
   ;; controller.lisp
   (:export
