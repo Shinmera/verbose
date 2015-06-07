@@ -37,6 +37,7 @@
   ;; message.lisp
   (:export
    #:*levels*
+   #:*verbose-conditions*
    #:log-object
    #:message
    #:message-time
@@ -46,7 +47,10 @@
    #:message-categories
    #:message-content
    #:message-visible
+   #:condition-message
+   #:message-condition
    #:log-message
+   #:log-condition
    #:log
    #:FATAL
    #:SEVERE
@@ -57,7 +61,6 @@
    #:TRACE)
   ;; pipes.lisp
   (:export
-   #:*verbose-conditions*
    #:*repl-faucet-timestamp*
    #:format-message
    #:repl-faucet

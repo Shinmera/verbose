@@ -6,8 +6,6 @@
 
 (in-package #:org.shirakumo.verbose)
 
-(defvar *verbose-conditions* T)
-
 ;;
 ;; REPL
 ;;
@@ -51,12 +49,6 @@ By default, the following methods are defined:
 
 (defmethod format-message ((nothing null) message)
   message)
-
-(defmethod format-message ((nothing null) (message condition))
-  (if *verbose-conditions*
-      (with-output-to-string (stream)
-        (dissect:present message stream))
-      (call-next-method)))
 
 (defmethod format-message ((nothing null) (message function))
   (funcall message))
