@@ -16,7 +16,19 @@
   "Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.")
 
 (defgeneric format-message (faucet message)
-  (:documentation "Wrapper around pass to potentially be overwritten if the output format should be changed."))
+  (:documentation "Wrapper around pass to potentially be overwritten if the output format should be changed.
+This serves a dual purpose: First it allows writers of faucets to customise
+their output representation. Secondly, it coerces the actual message content
+into a string to output.
+
+By default, the following methods are defined:
+(REPL-FAUCET MESSAGE) print to the repl, using (NIL content) to coerce the content.
+(STREAM MESSAGE)
+(NIL CONDITION)       if *VERBOSE-CONDITIONS* is T, (DISSECT:PRESENT message) is
+                      used as the output. Otherwise, the message itself is returned
+                      directly.
+(NIL FUNCTION)        call the message function and return its result.
+(NIL T)               simply return the message."))
 
 (defclass repl-faucet (faucet)
   () (:documentation "A simple logging faucet that prints log messages to the *standard-output*"))
@@ -29,7 +41,7 @@
   (format-message faucet message)
   message)
 
-(defmethod format-message ((faucet repl-faucet) message)
+(defmethod format-message ((faucet repl-faucet) (message message))
   (format T "~&LOG: ~a [~5,a] ~{<~a>~}: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
@@ -45,6 +57,9 @@
       (with-output-to-string (stream)
         (dissect:present message stream))
       (call-next-method)))
+
+(defmethod format-message ((nothing null) (message function))
+  (funcall message))
 
 ;;
 ;; CRON
@@ -111,12 +126,12 @@
         (finish-output stream))))
   message)
 
-(defmethod format-message ((stream stream) message)
+(defmethod format-message ((stream stream) (message message))
   (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
           (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
           (message-level message)
           (message-categories message)
-          (message-content message)))
+          (format-message NIL (message-content message))))
 
 ;;
 ;; Filters

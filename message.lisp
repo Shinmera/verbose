@@ -58,7 +58,9 @@ The following datum classes are recognised by default:
 STRING     -- Construct the content through FORMAT with datum and datum-args.
 SYMBOL     -- If datum names a condition class, MAKE-CONDITION is called with
               the datum and datum-args. Otherwise MAKE-INSTANCE is used.
-FUNCTION   -- Coerce the content by APPLYing datum-args to datum.
+FUNCTION   -- Use a (lambda () (apply datum datum-args)) as the content.
+              By default this means that the given function will be called
+              within the controller thread. See FORMAT-MESSAGE.
 T          -- Discard the datum-args and use datum directly as content.")
   (:method (level categories (datum string) &rest args)
     (log-message level categories (apply #'format NIL datum args)))
@@ -68,7 +70,7 @@ T          -- Discard the datum-args and use datum directly as content.")
                                              #'make-instance)
                                          datum args)))
   (:method (level categories (datum function) &rest args)
-    (log-message level categories (apply datum args)))
+    (log-message level categories (lambda () (apply datum args))))
   (:method (level categories datum &rest args)
     (declare (ignore args))
     (log-message level categories datum)))
