@@ -72,7 +72,7 @@ If NIL is returned, anything is passed."
 (defun output-here (&optional (standard-output *standard-output*))
   "Set the *standard-output* shared instance to STANDARD-OUTPUT, effectively
 redirecting output from the logger thread to the specified stream."
-  (setf (v:shared-instance '*standard-output*) standard-output))
+  (setf (shared-instance '*standard-output*) standard-output))
 
 (defun add-pipe (&rest segments)
   "Add a new pipe with the given segments."

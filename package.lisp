@@ -16,6 +16,10 @@
    #:*muffled-categories*
    #:controller
    #:with-controller-lock
+   #:share
+   #:with-shares
+   #:copy-bindings
+   #:set-standard-special-values
    #:pass
    #:shared-instance
    #:with-muffled-logging)
