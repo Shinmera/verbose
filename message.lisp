@@ -51,14 +51,32 @@
           "Categories must be a list of keywords.")
   (log-object (make-instance 'message :level level :categories categories :content content)))
 
-(defun log (level categories format-string &rest format-args)
-  "Logs a new message under given level and categories, using the format-string and arguments as message text."
-  (log-message level categories (apply #'format NIL format-string format-args)))
+(defgeneric log (level categories datum &rest datum-args)
+  (:documentation "Logs a new message under given level and categories, using the datum and datum-args to construct the content.
+
+The following datum classes are recognised by default:
+STRING     -- Construct the content through FORMAT with datum and datum-args.
+SYMBOL     -- If datum names a condition class, MAKE-CONDITION is called with
+              the datum and datum-args. Otherwise MAKE-INSTANCE is used.
+FUNCTION   -- Coerce the content by APPLYing datum-args to datum.
+T          -- Discard the datum-args and use datum directly as content.")
+  (:method (level categories (datum string) &rest args)
+    (log-message level categories (apply #'format NIL datum args)))
+  (:method (level categories (datum symbol) &rest args)
+    (log-message level categories (apply (if (subtypep datum 'condition)
+                                             #'make-condition
+                                             #'make-instance)
+                                         datum args)))
+  (:method (level categories (datum function) &rest args)
+    (log-message level categories (apply datum args)))
+  (:method (level categories datum &rest args)
+    (declare (ignore args))
+    (log-message level categories datum)))
 
 (defmacro define-level (level)
   "Define a new shorthand function for logging under a specific level."
-  `(defun ,(intern (symbol-name level) "VERBOSE") (category format-string &rest format-args)
-     (apply #'log ,(intern (symbol-name level) "KEYWORD") category format-string format-args)))
+  `(defun ,(intern (symbol-name level) "VERBOSE") (category datum &rest datum-args)
+     (apply #'log ,(intern (symbol-name level) "KEYWORD") category datum datum-args)))
 
 (macrolet ((define-all ()
              `(progn ,@(loop for level in *levels*
