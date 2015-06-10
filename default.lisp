@@ -82,5 +82,6 @@ redirecting output from the logger thread to the specified stream."
         (insert segment pipe))
       (add-segment *global-controller* pipe))))
 
+#-:verbose-no-init
 (unless *global-controller*
   (setf *global-controller* (make-standard-global-controller)))
