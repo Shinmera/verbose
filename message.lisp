@@ -14,7 +14,8 @@
 
 (defun log-object (object)
   "Shorthand for (pass *global-controller* object)"
-  (pass *global-controller* object))
+  (when *global-controller*
+    (pass *global-controller* object)))
 
 (defclass message ()
   ((time :initarg :time :accessor message-time)

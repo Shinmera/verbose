@@ -11,20 +11,40 @@
 
 (defclass controller (pipeline)
   ((thread :initform NIL :accessor controller-thread)
+   (thread-continue :initform NIL :accessor controller-thread-continue)
    (shares :initform (make-hash-table) :accessor shares)
    (message-condition :initform (bt:make-condition-variable :name "MESSAGE-CONDITION") :reader message-condition)
    (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
    (message-lock :initform (bt:make-lock "MESSAGE-LOCK") :reader message-lock))
   (:documentation "Main controller class that holds the logging pipeline, thread and shares."))
 
+(defmethod print-object ((controller controller) stream)
+  (print-unreadable-object (controller stream :type T)
+    (format stream "~@[:threaded~*~]~@[ :running~*~] :queue-size ~d"
+            (controller-thread controller) (controller-thread-continue controller) (length (message-pipe controller)))))
+
 (defmethod initialize-instance :after ((controller controller) &rest rest)
   (declare (ignore rest))
   (set-standard-special-values controller)
   #+:thread-support
-  (setf (controller-thread controller)
+  (setf (controller-thread-continue controller) T
+        (controller-thread controller)
         (bt:make-thread #'controller-loop
-                        :name "CONTROLLER MESSAGE LOOP"
+                        :name "verbose-controller-thread"
                         :initial-bindings `((*global-controller* . ,controller)))))
+
+(defun stop-controller (controller)
+  (setf (controller-thread-continue controller) NIL)
+  #+:thread-support
+  (loop with thread = (controller-thread controller)
+        for i from 0
+        while (and thread (bt:thread-alive-p thread))
+        do (bt:condition-notify (message-condition controller))
+           (sleep 0.1)
+           (when (< 5 i)
+             (bt:destroy-thread thread)
+             (return)))
+  controller)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro with-controller-lock ((&optional (controller '*global-controller*)) &body forms)
@@ -137,17 +157,18 @@ See COPY-BINDINGS."
          (condition (message-condition controller))
          (pipeline (pipeline controller)))
     (bt:acquire-lock lock)
-    (loop do
-      (with-simple-restart (skip "Skip processing the message.")
-        (let ((queue (message-pipe controller)))
-          (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
-          (bt:release-lock lock)
-          (with-shares (controller)
-            (loop for message across queue
-                  do (pass pipeline message)))))
-      (bt:acquire-lock lock)
-      (when (= 0 (length (message-pipe controller)))
-        (bt:condition-wait condition lock)))))
+    (loop while (controller-thread-continue controller)
+          do (with-simple-restart (skip "Skip processing the message.")
+               (let ((queue (message-pipe controller)))
+                 (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
+                 (bt:release-lock lock)
+                 (with-shares (controller)
+                   (loop for message across queue
+                         do (pass pipeline message)))))
+             (bt:acquire-lock lock)
+             (when (= 0 (length (message-pipe controller)))
+               (bt:condition-wait condition lock)))
+    (setf (controller-thread controller) NIL)))
 
 (defmethod pass ((controller controller) message)
   "Pass a raw message into the controller pipeline. 

@@ -15,6 +15,7 @@
    #:*global-controller*
    #:*muffled-categories*
    #:controller
+   #:stop-controller
    #:with-controller-lock
    #:share
    #:with-shares
