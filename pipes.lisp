@@ -161,3 +161,11 @@ By default, the following methods are defined:
             (loop for category in (categories filter)
                   thereis (find category (message-categories message) :test #'%matching-tree-category)))
     message))
+
+(defclass level-filter (filter)
+  ((level :initarg :level :initform :info :accessor filtered-level))
+  (:documentation "A simple pipe filter that only lets through messages that are above a certain level."))
+
+(defmethod pass ((filter level-filter) (message message))
+  (when (message-visible message (filtered-level filter))
+    message))

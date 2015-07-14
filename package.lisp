@@ -76,4 +76,5 @@
    #:stop-rotation
    #:category-filter
    #:categories
-   #:category-tree-filter))
+   #:category-tree-filter
+   #:level-filter))
