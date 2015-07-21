@@ -107,9 +107,16 @@ T          -- Discard the datum-args and use datum directly as content.")
 
 (defmacro define-level (level)
   "Define a new shorthand function for logging under a specific level."
-  `(defun ,(intern (symbol-name level) "VERBOSE") (category datum &rest datum-args)
-     (dissect:with-capped-stack ()
-       (apply #'log ,(intern (symbol-name level) "KEYWORD") category datum datum-args))))
+  (let ((func (intern (symbol-name level) "VERBOSE")))
+    `(progn
+       (defun ,func (category format-string &rest format-args)
+         (dissect:with-capped-stack ()
+           (apply #'log ',level category format-string format-args)))
+
+       (define-compiler-macro ,func (category format-string &rest format-args)
+         `(when (find-package :verbose)
+            (dissect:with-capped-stack ()
+              (log ',,level ,category ,format-string ,@format-args)))))))
 
 (macrolet ((define-all ()
              `(progn ,@(loop for level in *levels*
