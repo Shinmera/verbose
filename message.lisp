@@ -115,9 +115,10 @@ T          -- Discard the datum-args and use datum directly as content.")
 
        (define-compiler-macro ,func (category format-string &rest format-args)
          `(funcall (load-time-value
-                    (unless (find-package :verbose)
-                      #+quicklisp (ql:quickload :verbose :silent T)
-                      #-quicklisp (asdf:load-system :verbose)
+                    (progn
+                      (unless (find-package :verbose)
+                        #+quicklisp (ql:quickload :verbose :silent T)
+                        #-quicklisp (asdf:load-system :verbose))
                       (find-symbol (string :log) :verbose)))
                    ',,level ,category ,format-string ,@format-args)))))
 
