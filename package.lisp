@@ -65,10 +65,11 @@
    #:*repl-faucet-timestamp*
    #:format-message
    #:repl-faucet
+   #:file-faucet
+   #:faucet-file
    #:make-cron-interval
    #:rotating-log-faucet
    #:time-format
-   #:faucet-file
    #:current-file
    #:interval
    #:rotate-log

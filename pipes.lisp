@@ -54,6 +54,29 @@ By default, the following methods are defined:
   (funcall message))
 
 ;;
+;; FILE
+;;
+
+(defclass file-faucet (faucet)
+  ((file :initarg :file :initform #p"verbose.log" :accessor faucet-file)))
+
+(defmethod pass ((faucet file-faucet) message)
+  (when (faucet-file faucet)
+    (with-open-file (stream (faucet-file faucet) :direction :output
+                                                 :if-exists :append
+                                                 :if-does-not-exist :create)
+      (format-message stream message)
+      (finish-output stream)))
+  message)
+
+(defmethod format-message ((stream stream) (message message))
+  (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
+          (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
+          (message-level message)
+          (message-categories message)
+          (format-message NIL (message-content message))))
+
+;;
 ;; CRON
 ;;
 
@@ -64,9 +87,8 @@ By default, the following methods are defined:
       (clon:make-typed-cron-schedule
        :minute (parse m) :hour (parse h) :day-of-month (parse dm) :month (parse mo) :day-of-week (parse dw)))))
 
-(defclass rotating-log-faucet (faucet)
+(defclass rotating-log-faucet (file-faucet)
   ((time-format :initarg :time-format :initform *repl-faucet-timestamp* :accessor time-format)
-   (file :initarg :file :initform #p"verbose.log" :accessor faucet-file)
    (current-file :initform NIL :accessor current-file)
    (interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
    (scheduler :initform NIL :accessor scheduler)
@@ -109,21 +131,6 @@ By default, the following methods are defined:
     (trivial-timers:unschedule-timer (timer faucet)))
   (setf (scheduler faucet) NIL
         (timer faucet) NIL))
-
-(defmethod pass ((faucet rotating-log-faucet) message)
-  (when (current-file faucet)
-    (with-open-file (stream (current-file faucet) :direction :output :if-exists :append :if-does-not-exist :create)
-      (when (and (streamp stream) (open-stream-p stream))
-        (format-message stream message)
-        (finish-output stream))))
-  message)
-
-(defmethod format-message ((stream stream) (message message))
-  (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
-          (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
-          (message-level message)
-          (message-categories message)
-          (format-message NIL (message-content message))))
 
 ;;
 ;; Filters
