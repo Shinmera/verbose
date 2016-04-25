@@ -58,13 +58,23 @@ By default, the following methods are defined:
 ;;
 
 (defclass file-faucet (faucet)
-  ((file :initarg :file :initform #p"verbose.log" :accessor faucet-file)))
+  ((file :initform NIL :accessor faucet-file)
+   (stream :initform NIL :accessor faucet-stream))
+  (:default-initargs :file #p"verbose.log"))
+
+(defmethod shared-initialize :after ((faucet file-faucet) slot-names &key file)
+  (setf (faucet-file faucet) file))
+
+(defmethod (setf faucet-file) :after (file (faucet file-faucet))
+  (with-slots (stream) faucet
+    (when stream (close stream))
+    (when file (setf stream (open file :direction :output
+                                       :if-exists :append
+                                       :if-does-not-exist :create)))))
 
 (defmethod pass ((faucet file-faucet) message)
-  (when (faucet-file faucet)
-    (with-open-file (stream (faucet-file faucet) :direction :output
-                                                 :if-exists :append
-                                                 :if-does-not-exist :create)
+  (let ((stream (faucet-stream faucet)))
+    (when stream
       (format-message stream message)
       (finish-output stream)))
   message)
@@ -88,11 +98,15 @@ By default, the following methods are defined:
        :minute (parse m) :hour (parse h) :day-of-month (parse dm) :month (parse mo) :day-of-week (parse dw)))))
 
 (defclass rotating-log-faucet (file-faucet)
-  ((time-format :initarg :time-format :initform *repl-faucet-timestamp* :accessor time-format)
-   (current-file :initform NIL :accessor current-file)
-   (interval :initarg :interval :initform (make-cron-interval "0 0 * * *") :accessor interval)
+  ((time-format :initarg :time-format :accessor time-format)
+   (file-template :initarg :file-template :accessor file-template)
+   (interval :initarg :interval :accessor interval)
    (scheduler :initform NIL :accessor scheduler)
    (timer :initform NIL :accessor timer))
+  (:default-initargs
+   :time-format *repl-faucet-timestamp*
+   :file-template NIL
+   :interval (make-cron-interval "0 0 * * *"))
   (:documentation "A file logger that rotates at the given (cron) interval."))
 
 (defmethod print-object ((faucet rotating-log-faucet) stream)
@@ -107,13 +121,14 @@ By default, the following methods are defined:
 (defgeneric rotate-log (rotating-log-faucet)
   (:documentation "Initiate a log rotation immediately. This does not influence the automatic rotation interval."))
 (defmethod rotate-log ((faucet rotating-log-faucet))
-  (setf (current-file faucet)
-        (merge-pathnames (format NIL "~a-~a"
-                                 (local-time:format-timestring NIL (local-time:now) :format (time-format faucet))
-                                 (pathname-name (faucet-file faucet)))
-                         (faucet-file faucet)))
-  (ensure-directories-exist (faucet-file faucet))
-  (v:info :verbose.log "Rotated to new file ~a" (current-file faucet)))
+  (when (file-template faucet)
+    (setf (faucet-file faucet)
+          (merge-pathnames (format NIL "~a-~a"
+                                   (local-time:format-timestring NIL (local-time:now) :format (time-format faucet))
+                                   (pathname-name (file-template faucet)))
+                           (file-template faucet)))
+    (ensure-directories-exist (faucet-file faucet)))
+  (v:info :verbose.log "Rotated to new file ~a" (faucet-file faucet)))
 
 (defgeneric update-interval (rotating-log-faucet &optional (cron-interval))
   (:documentation "Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule."))
