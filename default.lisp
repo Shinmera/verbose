@@ -53,21 +53,22 @@ If NIL is returned, anything is passed."
       (setf (categories (find-place *global-controller* 'repl-category-filter))
             categories))))
 
-(defun add-repl-category (category)
+(defun add-repl-category (&rest category)
   "Add a new repl category to allow."
   (with-controller-lock ()
-    (let ((categories (categories (find-place *global-controller* 'repl-category-filter))))
-      (if (listp categories)
-          (pushnew category categories)
-          (setf (categories (find-place *global-controller* 'repl-category-filter)) (list category))))))
+    (let ((filter (find-place *global-controller* 'repl-category-filter)))
+      (when filter
+        (if (listp (categories filter))
+            (setf (categories filter) (nconc category (categories filter)))
+            (setf (categories filter) category))))))
 
-(defun remove-repl-category (category)
+(defun remove-repl-category (&rest category)
   "Remove an existing repl category."
   (with-controller-lock ()
-    (let ((categories (categories (find-place *global-controller* 'repl-category-filter))))
-      (when (listp categories)
-        (setf (categories (find-place *global-controller* 'repl-category-filter))
-              (delete category categories))))))
+    (let ((filter (find-place *global-controller* 'repl-category-filter)))
+      (when (and filter (listp (categories filter)))
+        (setf (categories filter) (delete-if (lambda (e) (find e category))
+                                             (categories filter)))))))
 
 (defun output-here (&optional (standard-output *standard-output*))
   "Set the *standard-output* shared instance to STANDARD-OUTPUT, effectively
