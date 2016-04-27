@@ -59,7 +59,7 @@ If NIL is returned, anything is passed."
     (let ((filter (find-place *global-controller* 'repl-category-filter)))
       (when filter
         (if (listp (categories filter))
-            (setf (categories filter) (nconc category (categories filter)))
+            (setf (categories filter) (append category (categories filter)))
             (setf (categories filter) category))))))
 
 (defun remove-repl-category (&rest category)
@@ -67,7 +67,7 @@ If NIL is returned, anything is passed."
   (with-controller-lock ()
     (let ((filter (find-place *global-controller* 'repl-category-filter)))
       (when (and filter (listp (categories filter)))
-        (setf (categories filter) (delete-if (lambda (e) (find e category))
+        (setf (categories filter) (remove-if (lambda (e) (find e category))
                                              (categories filter)))))))
 
 (defun output-here (&optional (standard-output *standard-output*))
