@@ -164,7 +164,7 @@ By default, the following methods are defined:
 (defclass category-tree-filter (category-filter) ()
   (:documentation "A pipe filter that only lets messages through whose category matches by tree."))
 
-(defun %matching-tree-category (filter category)
+(defun matching-tree-category (filter category)
   (let ((category-leaves (split-sequence #\. (string-upcase category)))
         (filter-leaves (split-sequence #\. (string-upcase filter))))
     (loop for catl in category-leaves
@@ -181,7 +181,7 @@ By default, the following methods are defined:
 (defmethod pass ((filter category-tree-filter) (message message))
   (when (or (eql (categories filter) T)
             (loop for category in (categories filter)
-                  thereis (find category (message-categories message) :test #'%matching-tree-category)))
+                  thereis (find category (message-categories message) :test #'matching-tree-category)))
     message))
 
 (defclass level-filter (filter)

@@ -184,19 +184,23 @@ will hold up the current thread.
 
 Also note that, depending on *MUFFLED-CATEGORIES*, some messages may not actually
 be put onto the pipeline at all."
-  (unless (or (find T *muffled-categories*)
-              (loop for category in *muffled-categories*
-                    thereis (find category (message-categories message))))
-    (cond ((and (controller-thread controller)
-                (bt:thread-alive-p (controller-thread controller)))
-           (with-controller-lock (controller)
-             (vector-push-extend message (message-pipe controller)))
-           (bt:condition-notify (message-condition controller)))
-          ;; If for some reason the thread is not around (maybe it broke, maybe
-          ;; there's no threads whatsoever) just pass it along directly.
-          (T
-           (with-shares (controller)
-             (pass (pipeline controller) message)))))
+  (let ((filtered-categories (loop for category in (message-categories message)
+                                   unless (loop for filter in *muffled-categories*
+                                                thereis (matching-tree-category filter category))
+                                   collect category)))
+    (setf (message-categories message) filtered-categories)
+    (when (and filtered-categories
+               (not (find T *muffled-categories*)))
+      (cond ((and (controller-thread controller)
+                  (bt:thread-alive-p (controller-thread controller)))
+             (with-controller-lock (controller)
+               (vector-push-extend message (message-pipe controller)))
+             (bt:condition-notify (message-condition controller)))
+            ;; If for some reason the thread is not around (maybe it broke, maybe
+            ;; there's no threads whatsoever) just pass it along directly.
+            (T
+             (with-shares (controller)
+               (pass (pipeline controller) message))))))
   NIL)
 
 (flet ((copy-function (from to)
