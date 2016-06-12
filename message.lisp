@@ -109,18 +109,18 @@ T          -- Discard the datum-args and use datum directly as content.")
   "Define a new shorthand function for logging under a specific level."
   (let ((func (intern (symbol-name level) "VERBOSE")))
     `(progn
-       (defun ,func (category format-string &rest format-args)
+       (defun ,func (categories format-string &rest format-args)
          (dissect:with-capped-stack ()
-           (apply #'log ',level category format-string format-args)))
+           (apply #'log ',level categories format-string format-args)))
 
-       (define-compiler-macro ,func (category format-string &rest format-args)
+       (define-compiler-macro ,func (categories format-string &rest format-args)
          `(funcall (load-time-value
                     (progn
                       (unless (find-package :verbose)
                         #+quicklisp (ql:quickload :verbose :silent T)
                         #-quicklisp (asdf:load-system :verbose))
                       (find-symbol (string :log) :verbose)))
-                   ',,level ,category ,format-string ,@format-args)))))
+                   ',,level ,categories ,format-string ,@format-args)))))
 
 (macrolet ((define-all ()
              `(progn ,@(loop for level in *levels*
