@@ -33,7 +33,7 @@
                         :name "verbose-controller-thread"
                         :initial-bindings `((*global-controller* . ,controller)))))
 
-(defun stop-controller (controller)
+(defun stop-controller (&optional (controller *global-controller*))
   (setf (controller-thread-continue controller) NIL)
   #+:thread-support
   (loop with thread = (controller-thread controller)
