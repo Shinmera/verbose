@@ -16,6 +16,7 @@
    #:*muffled-categories*
    #:*process-locally*
    #:controller
+   #:start-controller
    #:stop-controller
    #:with-controller-lock
    #:share
@@ -24,7 +25,8 @@
    #:set-standard-special-values
    #:pass
    #:shared-instance
-   #:with-muffled-logging)
+   #:with-muffled-logging
+   #:sync)
   ;; default.lisp
   (:export
    #:make-standard-global-controller

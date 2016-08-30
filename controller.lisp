@@ -10,6 +10,10 @@
 (defvar *muffled-categories* NIL "Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).")
 (defvar *process-locally* NIL "Whether to process messages in the local thread rather than the controller thread.")
 
+(defstruct sync-request
+  (condition (bt:make-condition-variable))
+  (lock (bt:make-lock)))
+
 (defclass controller (pipeline)
   ((thread :initform NIL :accessor controller-thread)
    (thread-continue :initform NIL :accessor controller-thread-continue)
@@ -27,6 +31,10 @@
 (defmethod initialize-instance :after ((controller controller) &rest rest)
   (declare (ignore rest))
   (set-standard-special-values controller)
+  (start-controller controller))
+
+(defun start-controller (&optional (controller *global-controller*))
+  "Starts the controller's thread."
   #+:thread-support
   (setf (controller-thread-continue controller) T
         (controller-thread controller)
@@ -35,6 +43,7 @@
                         :initial-bindings `((*global-controller* . ,controller)))))
 
 (defun stop-controller (&optional (controller *global-controller*))
+  "Stops the controller's thread."
   (setf (controller-thread-continue controller) NIL)
   #+:thread-support
   (loop with thread = (controller-thread controller)
@@ -158,18 +167,26 @@ See COPY-BINDINGS."
          (condition (message-condition controller))
          (pipeline (pipeline controller)))
     (bt:acquire-lock lock)
-    (loop do (with-simple-restart (skip "Skip processing the message batch.")
-               (let ((queue (message-pipe controller)))
-                 (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
-                 (bt:release-lock lock)
-                 (with-shares (controller)
-                   (loop for message across queue
-                         do (with-simple-restart (continue "Continue processing messages, skipping the current.")
-                              (pass pipeline message))))))
-             (bt:acquire-lock lock)
-             (when (= 0 (length (message-pipe controller)))
-               (bt:condition-wait condition lock)))
-    (setf (controller-thread controller) NIL)))
+    (unwind-protect
+         (loop do (with-simple-restart (skip "Skip processing the message batch.")
+                    (let ((queue (message-pipe controller)))
+                      (setf (message-pipe controller) (make-array '(10) :adjustable T :fill-pointer 0))
+                      (bt:release-lock lock)
+                      (with-shares (controller)
+                        (loop for thing across queue
+                              do (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
+                                   (etypecase thing
+                                     (message (pass pipeline thing))
+                                     (sync-request
+                                      ;; Make sure it's actually waiting on the condition.
+                                      (bt:with-lock-held ((sync-request-lock thing)))
+                                      (bt:condition-notify (sync-request-condition thing)))))))))
+                  (bt:acquire-lock lock)
+                  (when (= 0 (length (message-pipe controller)))
+                    (bt:condition-wait condition lock))
+               while (controller-thread-continue controller))
+      (setf (controller-thread controller) NIL)
+      (ignore-errors (bt:release-lock lock)))))
 
 (defmethod pass ((controller controller) message)
   "Pass a raw message into the controller pipeline. 
@@ -211,7 +228,6 @@ be put onto the pipeline at all."
   (copy-function 'share 'shared-instance)
   (copy-function '(setf share) '(setf shared-instance)))
 
-
 (defmacro with-muffled-logging ((&optional (category T) &rest more-categories) &body body)
   "Muffles all messages of CATEGORY within BODY.
 This means that all logging statements that fit CATEGORY within the BODY
@@ -219,3 +235,17 @@ are not actually ever handed to the pipeline. If CATEGORY is T, all
 messages are muffled."
   `(let ((*muffled-categories* (list* ,category ,@more-categories *muffled-categories*)))
      ,@body))
+
+(defun sync (&optional (controller *global-controller*))
+  "Causes a sync message to be sent to the controller thread (if present).
+This will only return once the sync message has been processed by the controller thread.
+You can use this in order to ensure that the logging messages you've sent out before
+calling sync have been processed."
+  (when (and (controller-thread controller)
+             (bt:thread-alive-p (controller-thread controller)))
+    (let ((sync (make-sync-request)))
+      (bt:with-lock-held ((sync-request-lock sync))
+        (with-controller-lock (controller)
+          (vector-push-extend sync (message-pipe controller)))
+        (bt:condition-notify (message-condition controller))
+        (bt:condition-wait (sync-request-condition sync) (sync-request-lock sync))))))
