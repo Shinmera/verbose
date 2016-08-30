@@ -192,9 +192,9 @@ be put onto the pipeline at all."
     (setf (message-categories message) filtered-categories)
     (when (and filtered-categories
                (not (find T *muffled-categories*)))
-      (cond ((and (controller-thread controller)
-                  (bt:thread-alive-p (controller-thread controller))
-                  (not *process-locally*))
+      (cond ((and (not *process-locally*)
+                  (controller-thread controller)
+                  (bt:thread-alive-p (controller-thread controller)))
              (with-controller-lock (controller)
                (vector-push-extend message (message-pipe controller)))
              (bt:condition-notify (message-condition controller)))
