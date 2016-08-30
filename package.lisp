@@ -14,6 +14,7 @@
   (:export
    #:*global-controller*
    #:*muffled-categories*
+   #:*process-locally*
    #:controller
    #:stop-controller
    #:with-controller-lock

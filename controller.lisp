@@ -8,6 +8,7 @@
 
 (defvar *global-controller* NIL "Global variable holding the current verbose controller instance and pipeline.")
 (defvar *muffled-categories* NIL "Which categories of messages that are handed to PASS to muffle (not put onto the pipeline).")
+(defvar *process-locally* NIL "Whether to process messages in the local thread rather than the controller thread.")
 
 (defclass controller (pipeline)
   ((thread :initform NIL :accessor controller-thread)
@@ -192,7 +193,8 @@ be put onto the pipeline at all."
     (when (and filtered-categories
                (not (find T *muffled-categories*)))
       (cond ((and (controller-thread controller)
-                  (bt:thread-alive-p (controller-thread controller)))
+                  (bt:thread-alive-p (controller-thread controller))
+                  (not *process-locally*))
              (with-controller-lock (controller)
                (vector-push-extend message (message-pipe controller)))
              (bt:condition-notify (message-condition controller)))
