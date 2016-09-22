@@ -3,11 +3,11 @@ Load Verbose with ASDF or Quicklisp.
 
     (ql:quickload :verbose)
 
-Since I expect that logging will be a somewhat frequent need, the verbose package is aliased to the single letter `v`. Under normal circumstances, Verbose starts itself up automatically after you've loaded it, so you can dive right in and log things.
+Since I expect that logging will be a somewhat frequent need, the Verbose package is aliased to the single letter `v`. Under normal circumstances, Verbose starts itself up automatically after you've loaded it, so you can dive right in and log things.
 
     (v:log :info :intro "Hello!")
     
-You will notice that there are three pieces of information to every log message you send over verbose. The level at which the message is logged, the category, and finally the message itself. For each of the standard `v:*levels*`, a shorthand function `trace` `debug` `info` `warn` `error` `severe` `fatal` exists.
+You will notice that there are three pieces of information to every log message you send over Verbose. The level at which the message is logged, the category, and finally the message itself. For each of the standard `v:*levels*`, a shorthand function `trace` `debug` `info` `warn` `error` `severe` `fatal` exists.
 
     (v:info :intro "Hello again.")
 
@@ -66,7 +66,7 @@ Finally we come to the last feature to do with categories. You can muffle catego
       (v:info :cars "Honking")
       (v:info '(:cars :pedestrians) "Exist"))
 
-The `with-muffled-logging` simply binds `*muffled-categories`, which is a list of muffled categories or `T` for everything, just like for the category filter.
+The `with-muffled-logging` simply binds `*muffled-categories*`, which is a list of muffled categories or `T` for everything, just like for the category filter.
 
 When deploying an application the background thread might again cause problems as it is started by default and dumping an image with threads alive is not possible. Thus, you should call `stop-controller` before dumping and `start-controller` after resuming the image. Alternatively you can push `:verbose-no-init` onto `*features*` before loading Verbose and then run something similar to `(setf v:global-controller (v:make-standard-global-controller))` upon startup.
 
