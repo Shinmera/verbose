@@ -183,6 +183,9 @@ directly.
   (type repl-faucet
     "A simple logging faucet that prints log messages to the *standard-output*")
 
+  (function make-cron-interval
+    "Parse a cron interval.")
+
   (type rotating-log-faucet
     "A file logger that rotates at the given (cron) interval.")
 

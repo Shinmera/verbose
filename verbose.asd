@@ -7,7 +7,7 @@
 (in-package #:cl-user)
 (asdf:defsystem verbose
   :name "Verbose"
-  :version "1.2.0"
+  :version "1.2.1"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
   :description "A logging framework using the piping library."
@@ -17,7 +17,7 @@
                (:file "controller")
                (:file "message")
                (:file "pipes")
-               (:file "default")
+               (:file "convenience")
                (:file "documentation"))
   :depends-on (:piping
                :local-time

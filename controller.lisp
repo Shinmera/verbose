@@ -22,20 +22,19 @@
    (message-pipe :initform (make-array '(10) :adjustable T :fill-pointer 0) :accessor message-pipe)
    (message-lock :initform (bt:make-lock "MESSAGE-LOCK") :reader message-lock)))
 
+(defmethod initialize-instance :after ((controller controller) &key)
+  (set-standard-special-values controller)
+  (start-controller controller))
+
 (defmethod print-object ((controller controller) stream)
   (print-unreadable-object (controller stream :type T)
     (format stream "~@[:threaded~*~]~@[ :running~*~] :queue-size ~d"
             (controller-thread controller) (controller-thread-continue controller) (length (message-pipe controller)))))
 
-(defmethod initialize-instance :after ((controller controller) &rest rest)
-  (declare (ignore rest))
-  (set-standard-special-values controller)
-  (start-controller controller))
-
 (defun start-controller (&optional (controller *global-controller*))
+  (setf (controller-thread-continue controller) T)
   #+:thread-support
-  (setf (controller-thread-continue controller) T
-        (controller-thread controller)
+  (setf (controller-thread controller)
         (bt:make-thread #'controller-loop
                         :name "verbose-controller-thread"
                         :initial-bindings `((*global-controller* . ,controller)))))
@@ -53,10 +52,9 @@
              (return)))
   controller)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro with-controller-lock ((&optional (controller '*global-controller*)) &body forms)
-    `(bt:with-lock-held ((message-lock ,controller))
-       ,@forms)))
+(defmacro with-controller-lock ((&optional (controller '*global-controller*)) &body forms)
+  `(bt:with-lock-held ((message-lock ,controller))
+     ,@forms))
 
 (defun share (name &optional (controller *global-controller*))
   (with-controller-lock (controller)
@@ -66,6 +64,12 @@
   (with-controller-lock (controller)
     (setf (gethash name (shares controller)) value)))
 
+(defun shared-instance (name &optional (controller *global-controller*))
+  (share name controller))
+
+(defun (setf shared-instance) (value name &optional (controller *global-controller*))
+  (setf (share name controller) value))
+
 (defun shared-bindings (controller)
   (loop for k being the hash-keys of (shares controller)
         for v being the hash-values of (shares controller)
@@ -73,19 +77,17 @@
         collect v into vals
         finally (return (cons keys vals))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro with-shares ((&optional (controller '*global-controller*)) &body body)
-    (let ((shares (gensym "SHARES")))
-      `(let ((,shares (shared-bindings ,controller)))
-         (progv (car ,shares) (cdr ,shares)
-           ,@body)))))
+(defmacro with-shares ((&optional (controller '*global-controller*)) &body body)
+  (let ((shares (gensym "SHARES")))
+    `(let ((,shares (shared-bindings ,controller)))
+       (progv (car ,shares) (cdr ,shares)
+         ,@body))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro copy-bindings (controller &body variables)
-    (let ((contr (gensym "CONTROLLER")))
-      `(let ((,contr ,controller))
-         ,@(loop for var in variables
-                 collect `(setf (share ',var ,contr) ,var))))))
+(defmacro copy-bindings (controller &body variables)
+  (let ((contr (gensym "CONTROLLER")))
+    `(let ((,contr ,controller))
+       ,@(loop for var in variables
+               collect `(setf (share ',var ,contr) ,var)))))
 
 (defun set-standard-special-values (controller)
   (copy-bindings controller
@@ -179,12 +181,6 @@
              (with-shares (controller)
                (pass (pipeline controller) message))))))
   NIL)
-
-(flet ((copy-function (from to)
-         (setf (fdefinition to) (fdefinition from)
-               (documentation to 'function) (documentation from 'function))))
-  (copy-function 'share 'shared-instance)
-  (copy-function '(setf share) '(setf shared-instance)))
 
 (defmacro with-muffled-logging ((&optional (category T) &rest more-categories) &body body)
   `(let ((*muffled-categories* (list* ,category ,@more-categories *muffled-categories*)))

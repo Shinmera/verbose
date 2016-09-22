@@ -6,13 +6,7 @@
 
 (in-package #:org.shirakumo.verbose)
 
-;;
-;; REPL
-;;
-
 (defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
-
-(defgeneric format-message (faucet message))
 
 (defclass repl-faucet (faucet)
   ())
@@ -39,16 +33,13 @@
 (defmethod format-message ((nothing null) (message function))
   (funcall message))
 
-;;
-;; FILE
-;;
-
 (defclass file-faucet (faucet)
   ((file :initform NIL :accessor faucet-file)
    (stream :initform NIL :accessor faucet-stream))
-  (:default-initargs :file #p"verbose.log"))
+  (:default-initargs
+   :file #p"verbose.log"))
 
-(defmethod shared-initialize :after ((faucet file-faucet) slot-names &key file)
+(defmethod initialize-instance :after ((faucet file-faucet) &key file)
   (setf (faucet-file faucet) file))
 
 (defmethod (setf faucet-file) :after (file (faucet file-faucet))
@@ -72,12 +63,7 @@
           (message-categories message)
           (format-message NIL (message-content message))))
 
-;;
-;; CRON
-;;
-
 (defun make-cron-interval (string)
-  "Parse a cron interval."
   (destructuring-bind (m h dm mo dw) (split-sequence #\Space string)
     (flet ((parse (a) (if (string= a "*") '* (parse-integer a))))
       (clon:make-typed-cron-schedule
@@ -98,12 +84,10 @@
   (format stream ">>ROTATE(~a)" (interval faucet))
   faucet)
 
-(defmethod initialize-instance :after ((faucet rotating-log-faucet) &rest args)
-  (declare (ignore args))
+(defmethod initialize-instance :after ((faucet rotating-log-faucet) &key)
   (rotate-log faucet)
   (update-interval faucet))
 
-(defgeneric rotate-log (rotating-log-faucet))
 (defmethod rotate-log ((faucet rotating-log-faucet))
   (when (file-template faucet)
     (setf (faucet-file faucet)
@@ -114,7 +98,6 @@
     (ensure-directories-exist (faucet-file faucet)))
   (v:info :verbose.log "Rotated to new file ~a" (faucet-file faucet)))
 
-(defgeneric update-interval (rotating-log-faucet &optional (cron-interval)))
 (defmethod update-interval ((faucet rotating-log-faucet) &optional (interval (interval faucet)))
   (when (timer faucet) (trivial-timers:unschedule-timer (timer faucet)))
   (when (stringp interval) (setf interval (make-cron-interval interval)))
@@ -122,16 +105,11 @@
         (scheduler faucet) (clon:make-scheduler interval)
         (timer faucet) (clon:schedule-function #'(lambda () (rotate-log faucet)) (scheduler faucet))))
 
-(defgeneric stop-rotation (rotating-log-faucet))
 (defmethod stop-rotation ((faucet rotating-log-faucet))
   (when (timer faucet)
     (trivial-timers:unschedule-timer (timer faucet)))
   (setf (scheduler faucet) NIL
         (timer faucet) NIL))
-
-;;
-;; Filters
-;;
 
 (defclass category-filter (filter)
   ((categories :initarg :categories :initform T :accessor categories)))
@@ -142,7 +120,8 @@
                   thereis (find category (message-categories message))))
     message))
 
-(defclass category-tree-filter (category-filter) ())
+(defclass category-tree-filter (category-filter)
+  ())
 
 (defun matching-tree-category (filter category)
   (let ((category-leaves (split-sequence #\. (string-upcase category)))

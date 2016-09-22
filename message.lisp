@@ -8,6 +8,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)))
+
 (defvar *verbose-conditions* T)
 
 (defun log-object (object)
@@ -33,9 +34,8 @@
    :condition (cl:error "CONDITION required.")))
 
 ;; Backwards compat.
-(defgeneric message-category (message)
-  (:method ((message message))
-    (first (message-categories message))))
+(defmethod message-category ((message message))
+  (first (message-categories message)))
 
 (defmethod print-object ((message message) stream)
   (print-unreadable-object (message stream)
@@ -46,9 +46,8 @@
             (message-content message)))
   message)
 
-(defgeneric message-visible (message level)
-  (:method ((message message) (level symbol))
-    (<= (position level *levels*) (position (message-level message) *levels*))))
+(defmethod message-visible ((message message) (level symbol))
+  (<= (position level *levels*) (position (message-level message) *levels*)))
 
 (defun log-message (level categories content &optional (class 'message) &rest initargs)
   (unless (listp categories)
@@ -66,22 +65,25 @@
                      (princ-to-string condition))))
     (log-message level categories content 'condition-message :condition condition)))
 
-(defgeneric log (level categories datum &rest datum-args)
-  (:method (level categories (datum string) &rest args)
-    (log-message level categories (apply #'format NIL datum args)))
-  (:method (level categories (datum symbol) &rest args)
-    (log level categories (apply (if (subtypep datum 'condition)
-                                     #'make-condition
-                                     #'make-instance)
-                                 datum args)))
-  (:method (level categories (datum function) &rest args)
-    (log-message level categories (lambda () (apply datum args))))
-  (:method (level categories (datum condition) &rest args)
-    (declare (ignore args))
-    (log-condition level categories datum))
-  (:method (level categories datum &rest args)
-    (declare (ignore args))
-    (log-message level categories datum)))
+(defmethod log (level categories (datum string) &rest args)
+  (log-message level categories (apply #'format NIL datum args)))
+
+(defmethod log (level categories (datum symbol) &rest args)
+  (log level categories (apply (if (subtypep datum 'condition)
+                                   #'make-condition
+                                   #'make-instance)
+                               datum args)))
+
+(defmethod log (level categories (datum function) &rest args)
+  (log-message level categories (lambda () (apply datum args))))
+
+(defmethod log (level categories (datum condition) &rest args)
+  (declare (ignore args))
+  (log-condition level categories datum))
+
+(defmethod log (level categories datum &rest args)
+  (declare (ignore args))
+  (log-message level categories datum))
 
 (defmacro define-level (level)
   (let ((func (intern (symbol-name level) "VERBOSE")))
