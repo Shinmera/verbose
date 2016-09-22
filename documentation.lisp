@@ -182,6 +182,23 @@ directly.
 
   (type repl-faucet
     "A simple logging faucet that prints log messages to the *standard-output*")
+  
+  (type file-faucet
+    "A faucet that writes everything to a file.")
+
+  (type rotating-file-faucet
+    "A file faucet that includes automatic log file rotation.")
+  
+  (type category-filter
+    "A simple pipe filter that only lets through matching categories.")
+
+  (type category-tree-filter
+    "A pipe filter that only lets messages through whose category matches by tree.")
+
+  (type level-filter
+    "A simple pipe filter that only lets through messages that are above a certain level.")
+
+
 
   (function make-cron-interval
     "Parse a cron interval.")
@@ -196,13 +213,4 @@ directly.
     "Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule.")
 
   (function stop-rotation
-    "Stops the rotation. Logging will still continue on the current file.")
-
-  (type category-filter
-    "A simple pipe filter that only lets through matching categories.")
-
-  (type category-tree-filter
-    "A pipe filter that only lets messages through whose category matches by tree.")
-
-  (type level-filter
-    "A simple pipe filter that only lets through messages that are above a certain level."))
+    "Stops the rotation. Logging will still continue on the current file."))

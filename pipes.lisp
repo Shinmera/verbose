@@ -42,12 +42,15 @@
 (defmethod initialize-instance :after ((faucet file-faucet) &key file)
   (setf (faucet-file faucet) file))
 
-(defmethod (setf faucet-file) :after (file (faucet file-faucet))
+(defmethod (setf faucet-file) (file (faucet file-faucet))
   (with-slots (stream) faucet
-    (when stream (close stream))
-    (when file (setf stream (open file :direction :output
-                                       :if-exists :append
-                                       :if-does-not-exist :create)))))
+    (when stream
+      (close stream))
+    (when file
+      (setf stream (open file :direction :output
+                              :if-exists :append
+                              :if-does-not-exist :create))
+      (setf (slot-value faucet 'file) file))))
 
 (defmethod pass ((faucet file-faucet) message)
   (let ((stream (faucet-stream faucet)))
@@ -62,6 +65,86 @@
           (message-level message)
           (message-categories message)
           (format-message NIL (message-content message))))
+
+(defclass rotating-file-faucet (file-faucet)
+  ((interval :initform :daily :initarg :interval :accessor interval)
+   (last-rotation :initform 0 :accessor last-rotation)
+   (template :initform NIL :initarg :template :initarg :file :accessor template)))
+
+(defmethod initialize-instance ((faucet rotating-file-faucet) &key)
+  (call-next-method)
+  ;; Rotate before the file-faucet opens itself up.
+  (rotate faucet))
+
+(defmethod pass :before ((faucet rotating-file-faucet) thing)
+  (let ((pre (last-rotation faucet))
+        (now (get-universal-time)))
+    (when (multiple-value-bind (s m h dd mm yy dow) (decode-universal-time now)
+            (multiple-value-bind (ps pm ph pdd pmm pyy pdow) (decode-universal-time pre)
+              (ecase (interval faucet)
+                (:hourly
+                 (or (/= ph h) (/= pdd dd) (/= pmm mm) (/= pyy yy)))
+                (:daily
+                 (or (/= pdd dd) (/= pmm mm) (/= pyy yy)))
+                (:monthly
+                 (or (/= pmm mm) (/= pyy yy)))
+                (:weekly
+                 (< (* 60 60 24 7) (- (get-universal-time) (last-rotation faucet)))))))
+      (rotate faucet))))
+
+(defmethod rotate ((faucet rotating-file-faucet) &optional new-file)
+  (let ((time (setf (last-rotation faucet) (get-universal-time))))
+    (cond (new-file
+           (setf (faucet-file faucet) new-file))
+          (T
+           (multiple-value-bind (s m h dd mm yy) (decode-universal-time time)
+             (setf (faucet-file faucet)
+                   (make-pathname :name (format NIL "~4,'0d.~2,'0d.~2,'0d ~2,'0d:~2,'0d:~2,'0d~@[ ~a~]"
+                                                yy mm dd h m s (pathname-name (template faucet)))
+                                  :defaults (template faucet))))))
+    (setf (last-rotation faucet) time)))
+
+(defclass category-filter (filter)
+  ((categories :initarg :categories :initform T :accessor categories)))
+
+(defmethod pass ((filter category-filter) (message message))
+  (when (or (eql (categories filter) T)
+            (loop for category in (categories filter)
+                  thereis (find category (message-categories message))))
+    message))
+
+(defclass category-tree-filter (category-filter)
+  ())
+
+(defun matching-tree-category (filter category)
+  (let ((category-leaves (split-sequence #\. (string-upcase category)))
+        (filter-leaves (split-sequence #\. (string-upcase filter))))
+    (loop for catl in category-leaves
+       for fill in filter-leaves
+       do (cond
+            ((or (string= catl "*")
+                 (string= fill "*"))
+             (return T))
+            ((not (string= catl fill))
+             (return NIL)))
+       finally (return (>= (length category-leaves)
+                           (length filter-leaves))))))
+
+(defmethod pass ((filter category-tree-filter) (message message))
+  (when (or (eql (categories filter) T)
+            (loop for category in (categories filter)
+                  thereis (find category (message-categories message) :test #'matching-tree-category)))
+    message))
+
+(defclass level-filter (filter)
+  ((level :initarg :level :initform :info :accessor filtered-level)))
+
+(defmethod pass ((filter level-filter) (message message))
+  (when (message-visible message (filtered-level filter))
+    message))
+
+
+;; Backwards compat
 
 (defun make-cron-interval (string)
   (destructuring-bind (m h dm mo dw) (split-sequence #\Space string)
@@ -110,42 +193,3 @@
     (trivial-timers:unschedule-timer (timer faucet)))
   (setf (scheduler faucet) NIL
         (timer faucet) NIL))
-
-(defclass category-filter (filter)
-  ((categories :initarg :categories :initform T :accessor categories)))
-
-(defmethod pass ((filter category-filter) (message message))
-  (when (or (eql (categories filter) T)
-            (loop for category in (categories filter)
-                  thereis (find category (message-categories message))))
-    message))
-
-(defclass category-tree-filter (category-filter)
-  ())
-
-(defun matching-tree-category (filter category)
-  (let ((category-leaves (split-sequence #\. (string-upcase category)))
-        (filter-leaves (split-sequence #\. (string-upcase filter))))
-    (loop for catl in category-leaves
-       for fill in filter-leaves
-       do (cond
-            ((or (string= catl "*")
-                 (string= fill "*"))
-             (return T))
-            ((not (string= catl fill))
-             (return NIL)))
-       finally (return (>= (length category-leaves)
-                           (length filter-leaves))))))
-
-(defmethod pass ((filter category-tree-filter) (message message))
-  (when (or (eql (categories filter) T)
-            (loop for category in (categories filter)
-                  thereis (find category (message-categories message) :test #'matching-tree-category)))
-    message))
-
-(defclass level-filter (filter)
-  ((level :initarg :level :initform :info :accessor filtered-level)))
-
-(defmethod pass ((filter level-filter) (message message))
-  (when (message-visible message (filtered-level filter))
-    message))

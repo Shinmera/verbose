@@ -70,6 +70,17 @@
    #:repl-faucet
    #:file-faucet
    #:faucet-file
+   #:rotating-file-faucet
+   #:interval
+   #:last-rotation
+   #:template
+   #:rotate
+   #:category-filter
+   #:categories
+   #:category-tree-filter
+   #:level-filter)
+  ;; backwards compat
+  (:export
    #:make-cron-interval
    #:rotating-log-faucet
    #:time-format
@@ -77,8 +88,4 @@
    #:interval
    #:rotate-log
    #:update-interval
-   #:stop-rotation
-   #:category-filter
-   #:categories
-   #:category-tree-filter
-   #:level-filter))
+   #:stop-rotation))
