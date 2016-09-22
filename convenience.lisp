@@ -7,12 +7,11 @@
 (in-package #:org.shirakumo.verbose)
 
 (defun make-standard-global-controller ()
-  (let ((pipeline (make-instance 'controller))
-        (pipe (make-pipe)))
-    (insert (make-instance 'level-filter) pipe)
-    (insert (make-instance 'category-tree-filter) pipe)
-    (insert (make-instance 'repl-faucet) pipe)
-    (add-segment pipeline pipe)
+  (let ((pipeline (make-instance 'controller)))
+    (add-pipe pipeline
+              (make-instance 'level-filter)
+              (make-instance 'category-tree-filter)
+              (make-instance 'repl-faucet))
     (set-name pipeline '(0 0) 'repl-level-filter)
     (set-name pipeline '(0 1) 'repl-category-filter)
     (set-name pipeline '(0 2) 'repl-faucet)
