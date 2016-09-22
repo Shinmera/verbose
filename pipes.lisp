@@ -6,7 +6,8 @@
 
 (in-package #:org.shirakumo.verbose)
 
-(defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
+;; Backwards compat
+(defvar *repl-faucet-timestamp* *timestamp-format*)
 
 (defclass repl-faucet (faucet)
   ())
@@ -20,18 +21,8 @@
   message)
 
 (defmethod format-message ((faucet repl-faucet) (message message))
-  (format T "~&LOG: ~a [~5,a] ~{<~a>~}: ~a~%"
-          (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
-          (message-level message)
-          (message-categories message)
-          (format-message NIL (message-content message)))
-  (finish-output))
-
-(defmethod format-message ((nothing null) message)
-  message)
-
-(defmethod format-message ((nothing null) (message function))
-  (funcall message))
+  (let ((*timestamp-format* *repl-faucet-timestamp*))
+    (format-message *standard-output* message)))
 
 (defclass file-faucet (faucet)
   ((file :initform NIL :accessor faucet-file)
@@ -55,16 +46,8 @@
 (defmethod pass ((faucet file-faucet) message)
   (let ((stream (faucet-stream faucet)))
     (when stream
-      (format-message stream message)
-      (finish-output stream)))
+      (format-message stream message)))
   message)
-
-(defmethod format-message ((stream stream) (message message))
-  (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
-          (local-time:format-timestring NIL (message-time message) :format *repl-faucet-timestamp*)
-          (message-level message)
-          (message-categories message)
-          (format-message NIL (message-content message))))
 
 (defclass rotating-file-faucet (file-faucet)
   ((interval :initform :daily :initarg :interval :accessor interval)

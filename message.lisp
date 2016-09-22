@@ -10,6 +10,7 @@
   (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)))
 
 (defvar *verbose-conditions* T)
+(defvar *timestamp-format* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 
 (defun log-object (object)
   (when *global-controller*
@@ -27,6 +28,24 @@
    :level :info
    :categories '(:general)
    :content NIL))
+
+(defmethod format-message ((stream stream) (message message))
+  (format stream "~&~a [~5,a] ~{<~a>~}: ~a~%"
+          (local-time:format-timestring NIL (message-time message) :format *timestamp-format*)
+          (message-level message)
+          (message-categories message)
+          (format-message NIL (message-content message)))
+  (force-output stream))
+
+(defmethod format-message ((null null) (message message))
+  (with-output-to-string (stream)
+    (format-message stream message)))
+
+(defmethod format-message ((null null) message)
+  message)
+
+(defmethod format-message ((null null) (message function))
+  (funcall message))
 
 (defclass condition-message (message)
   ((condition :initarg :condition :accessor message-condition))
