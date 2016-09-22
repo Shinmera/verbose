@@ -17,10 +17,12 @@
                (:file "controller")
                (:file "message")
                (:file "pipes")
-               (:file "default"))
+               (:file "default")
+               (:file "documentation"))
   :depends-on (:piping
                :local-time
                :bordeaux-threads
                :split-sequence
                :clon
-               :dissect))
+               :dissect
+               :documentation-utils))

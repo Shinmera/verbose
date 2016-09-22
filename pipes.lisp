@@ -10,26 +10,12 @@
 ;; REPL
 ;;
 
-(defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2))
-  "Default timestamp format of the repl faucet. See LOCAL-TIME:FORMAT-TIMESTRING.")
+(defvar *repl-faucet-timestamp* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 
-(defgeneric format-message (faucet message)
-  (:documentation "Wrapper around pass to potentially be overwritten if the output format should be changed.
-This serves a dual purpose: First it allows writers of faucets to customise
-their output representation. Secondly, it coerces the actual message content
-into a string to output.
-
-By default, the following methods are defined:
-(REPL-FAUCET MESSAGE) print to the repl, using (NIL content) to coerce the content.
-(STREAM MESSAGE)
-(NIL CONDITION)       if *VERBOSE-CONDITIONS* is T, (DISSECT:PRESENT message) is
-                      used as the output. Otherwise, the message itself is returned
-                      directly.
-(NIL FUNCTION)        call the message function and return its result.
-(NIL T)               simply return the message."))
+(defgeneric format-message (faucet message))
 
 (defclass repl-faucet (faucet)
-  () (:documentation "A simple logging faucet that prints log messages to the *standard-output*"))
+  ())
 
 (defmethod print-object ((faucet repl-faucet) stream)
   (format stream ">>REPL")
@@ -106,8 +92,7 @@ By default, the following methods are defined:
   (:default-initargs
    :time-format *repl-faucet-timestamp*
    :file-template NIL
-   :interval (make-cron-interval "0 0 * * *"))
-  (:documentation "A file logger that rotates at the given (cron) interval."))
+   :interval (make-cron-interval "0 0 * * *")))
 
 (defmethod print-object ((faucet rotating-log-faucet) stream)
   (format stream ">>ROTATE(~a)" (interval faucet))
@@ -118,8 +103,7 @@ By default, the following methods are defined:
   (rotate-log faucet)
   (update-interval faucet))
 
-(defgeneric rotate-log (rotating-log-faucet)
-  (:documentation "Initiate a log rotation immediately. This does not influence the automatic rotation interval."))
+(defgeneric rotate-log (rotating-log-faucet))
 (defmethod rotate-log ((faucet rotating-log-faucet))
   (when (file-template faucet)
     (setf (faucet-file faucet)
@@ -130,8 +114,7 @@ By default, the following methods are defined:
     (ensure-directories-exist (faucet-file faucet)))
   (v:info :verbose.log "Rotated to new file ~a" (faucet-file faucet)))
 
-(defgeneric update-interval (rotating-log-faucet &optional (cron-interval))
-  (:documentation "Change the rotation interval. cron-interval should either be a cron-parsable string or a clon:cron-schedule."))
+(defgeneric update-interval (rotating-log-faucet &optional (cron-interval)))
 (defmethod update-interval ((faucet rotating-log-faucet) &optional (interval (interval faucet)))
   (when (timer faucet) (trivial-timers:unschedule-timer (timer faucet)))
   (when (stringp interval) (setf interval (make-cron-interval interval)))
@@ -139,8 +122,7 @@ By default, the following methods are defined:
         (scheduler faucet) (clon:make-scheduler interval)
         (timer faucet) (clon:schedule-function #'(lambda () (rotate-log faucet)) (scheduler faucet))))
 
-(defgeneric stop-rotation (rotating-log-faucet)
-  (:documentation "Stops the rotation. Logging will still continue on the current file."))
+(defgeneric stop-rotation (rotating-log-faucet))
 (defmethod stop-rotation ((faucet rotating-log-faucet))
   (when (timer faucet)
     (trivial-timers:unschedule-timer (timer faucet)))
@@ -152,8 +134,7 @@ By default, the following methods are defined:
 ;;
 
 (defclass category-filter (filter)
-  ((categories :initarg :categories :initform T :accessor categories))
-  (:documentation "A simple pipe filter that only lets through matching categories."))
+  ((categories :initarg :categories :initform T :accessor categories)))
 
 (defmethod pass ((filter category-filter) (message message))
   (when (or (eql (categories filter) T)
@@ -161,8 +142,7 @@ By default, the following methods are defined:
                   thereis (find category (message-categories message))))
     message))
 
-(defclass category-tree-filter (category-filter) ()
-  (:documentation "A pipe filter that only lets messages through whose category matches by tree."))
+(defclass category-tree-filter (category-filter) ())
 
 (defun matching-tree-category (filter category)
   (let ((category-leaves (split-sequence #\. (string-upcase category)))
@@ -185,8 +165,7 @@ By default, the following methods are defined:
     message))
 
 (defclass level-filter (filter)
-  ((level :initarg :level :initform :info :accessor filtered-level))
-  (:documentation "A simple pipe filter that only lets through messages that are above a certain level."))
+  ((level :initarg :level :initform :info :accessor filtered-level)))
 
 (defmethod pass ((filter level-filter) (message message))
   (when (message-visible message (filtered-level filter))

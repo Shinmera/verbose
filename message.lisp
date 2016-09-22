@@ -7,13 +7,10 @@
 (in-package #:org.shirakumo.verbose)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)
-    "List of accepted logging level names. The position in the list defines its level, ranking from finest to roughest."))
-(defvar *verbose-conditions* T
-  "Wether to report conditions verbosely using DISSECT:PRESENT.")
+  (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)))
+(defvar *verbose-conditions* T)
 
 (defun log-object (object)
-  "Shorthand for (pass *global-controller* object)"
   (when *global-controller*
     (pass *global-controller* object)))
 
@@ -23,7 +20,6 @@
    (level :initarg :level :accessor message-level)
    (categories :initarg :categories :accessor message-categories)
    (content :initarg :content :accessor message-content))
-  (:documentation "Message object to be passed around the system.")
   (:default-initargs
    :time (local-time:now)
    :thread (bt:current-thread)
@@ -33,7 +29,6 @@
 
 (defclass condition-message (message)
   ((condition :initarg :condition :accessor message-condition))
-  (:documentation "Message object that carries a condition object.")
   (:default-initargs
    :condition (cl:error "CONDITION required.")))
 
@@ -52,12 +47,10 @@
   message)
 
 (defgeneric message-visible (message level)
-  (:documentation "Returns T if the message is visible under the given level.")
   (:method ((message message) (level symbol))
     (<= (position level *levels*) (position (message-level message) *levels*))))
 
 (defun log-message (level categories content &optional (class 'message) &rest initargs)
-  "Logs a message with the given parameters."
   (unless (listp categories)
     (setf categories (list categories)))
   (assert (find level *levels*) (level)
@@ -74,21 +67,6 @@
     (log-message level categories content 'condition-message :condition condition)))
 
 (defgeneric log (level categories datum &rest datum-args)
-  (:documentation "Logs a new message under given level and categories, using the datum and datum-args to construct the content.
-
-The following datum classes are recognised by default:
-STRING     -- Construct the content through FORMAT with datum and datum-args.
-SYMBOL     -- If datum names a condition class, MAKE-CONDITION is called with
-              the datum and datum-args. Otherwise MAKE-INSTANCE is used. LOG
-              is subsequently called /again/ with the resulting instance as
-              the new datum. This ensures that dispatching happens as usual.
-FUNCTION   -- Use a (lambda () (apply datum datum-args)) as the content.
-              By default this means that the given function will be called
-              within the controller thread. See FORMAT-MESSAGE. Be aware
-              that this means the function will be executed at least once
-              for each faucet, and potentially arbitrary times to perform
-              the pipelinging.
-T          -- Discard the datum-args and use datum directly as content.")
   (:method (level categories (datum string) &rest args)
     (log-message level categories (apply #'format NIL datum args)))
   (:method (level categories (datum symbol) &rest args)
@@ -106,7 +84,6 @@ T          -- Discard the datum-args and use datum directly as content.")
     (log-message level categories datum)))
 
 (defmacro define-level (level)
-  "Define a new shorthand function for logging under a specific level."
   (let ((func (intern (symbol-name level) "VERBOSE")))
     `(progn
        (defun ,func (categories format-string &rest format-args)
