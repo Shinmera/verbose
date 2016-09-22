@@ -11,6 +11,7 @@
 
 (defvar *verbose-conditions* T)
 (defvar *timestamp-format* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
+(defvar *default-message-class* 'message)
 
 (defun log-object (object)
   (when *global-controller*
@@ -68,7 +69,7 @@
 (defmethod message-visible ((message message) (level symbol))
   (<= (position level *levels*) (position (message-level message) *levels*)))
 
-(defun log-message (level categories content &optional (class 'message) &rest initargs)
+(defun log-message (level categories content &optional (class *default-message-class*) &rest initargs)
   (unless (listp categories)
     (setf categories (list categories)))
   (assert (find level *levels*) (level)
