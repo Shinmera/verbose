@@ -94,17 +94,20 @@ Especially in production environments you'll likely want to do something more th
 
 What you'll most likely want to do is configure the controller to send messages through a new pipe that will end in a faucet.
 
-    (v:add-pipe (make-instance 'v:rotating-file-faucet :file #p"verbose.log")) 
+    (v:define-pipe v:*global-controller*
+      (v:rotating-file-faucet :file #p"verbose.log")) 
 
 This is the simplest you can get, and sufficient if you just want to dump literally everything to a file. If you want to filter things, you'll need to stick a filter segment before it.
 
-    (v:add-pipe (make-instance 'v:level-filter :level :error)
-                (make-instance 'v:rotating-file-faucet :file #p"err.log"))
+    (v:define-pipe v:*global-controller*
+      (v:level-filter :level :error)
+      (v:rotating-file-faucet :file #p"err.log"))
 
 You can add as many pipes you want, and stick as many filters before each as you like. For cheap "one-time use" filters that need a bit more work than the level-filter and category-filters offer, you can use piping's `predicate-filter`, which takes a predicate whose return value dictates whether the message should be let through.
 
-    (v:add-pipe (make-instance 'piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:message-time m)))))
-                (make-instance 'v:rotating-file-faucet :file #p"midnight.log"))
+    (v:define-pipe v:*global-controller*
+      (piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:message-time m)))))
+      (v:rotating-file-faucet :file #p"midnight.log"))
 
 As mentioned before, everything else will need custom segments, which are discussed in the next section.
 
@@ -135,13 +138,13 @@ Next you might want to create a filter pipe segment of your own that does more c
       (when (typep thing (filter-type filter))
         thing))
 
-After adding the filter and a faucet to the pipeline as illustrated above, you'll likely want to get easy access to it again at a later point in order to be able to change its fields. To do this it pays off to give it a name.
+After adding the filter and a faucet to the pipeline as illustrated above, you'll likely want to get easy access to it again at a later point in order to be able to change its fields. To do this it pays off to give it a name. You can do this by adding a `:name` field to your `define-pipe` expression.
 
-FIXME: THIS IS VERY CLUMSY. FIX IT BY ALLOWING NAMES AT DEFINITION TIME.
+    (v:define-pipe v:*global-controller*
+      (type-filter :name 'type-filter)
+      (v:repl-faucet))
 
-    (piping:set-name v:*global-controller* '(1 0) 'type-filter)
-
-The "magic numbers" `1 0` here refer to the position of the segment within the pipeline. Unless you added other pipes already, your new pipe will be at index `1`. And unless you placed the filter elsewhere, it should be at index `0` of that pipe. After setting the name, you can retrieve your filter with `find-place`.
+After setting the name, you can retrieve your filter with `find-place`.
 
     (piping:find-place v:*global-controller* 'type-filter)
 

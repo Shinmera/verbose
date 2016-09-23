@@ -1,25 +1,14 @@
 #|
-  This file is a part of Verbose
-  (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
-  Author: Nicolas Hafner <shinmera@tymoon.eu>
+ This file is a part of Verbose
+ (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
+ Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
 (in-package #:org.shirakumo.verbose)
 
-(defun make-standard-global-controller ()
-  (let ((pipeline (make-instance 'controller)))
-    (add-pipe pipeline
-              (make-instance 'level-filter)
-              (make-instance 'category-tree-filter)
-              (make-instance 'repl-faucet))
-    (set-name pipeline '(0 0) 'repl-level-filter)
-    (set-name pipeline '(0 1) 'repl-category-filter)
-    (set-name pipeline '(0 2) 'repl-faucet)
-    pipeline))
-
 (defun remove-global-controller ()
   (when *global-controller*
-    (stop-controller *global-controller*)
+    (stop *global-controller*)
     (setf *global-controller* NIL)))
 
 (defun restart-global-controller ()
@@ -63,7 +52,7 @@
                                                (categories filter))))))))
 
 (defun output-here (&optional (standard-output *standard-output*) (controller *global-controller*))
-  (setf (shared-instance '*standard-output* controller) standard-output))
+  (setf (output (find-place controller 'repl-faucet)) standard-output))
 
 (defun add-pipe (&rest segments)
   (let ((controller (if (typep (first segments) 'controller)
@@ -74,6 +63,37 @@
         (dolist (segment segments)
           (insert segment pipe))
         (add-segment controller pipe)))))
+
+(defmacro define-pipe (pipeline &body segments)
+  (flet ((removef (plist &rest keys)
+           (loop for (key val) on plist by #'cddr
+                 for test = (find key keys)
+                 unless test collect key
+                 unless test collect val)))
+    (let ((names (loop for i from 0
+                       for segment in segments
+                       for name = (getf (rest segment) :name)
+                       when name collect (list i name)))
+          (pipe (gensym "PIPE"))
+          (parent (gensym "PARENT"))
+          (c (gensym "C")))
+      `(let ((,parent ,pipeline)
+             (,pipe (make-pipe)))
+         ,@(loop for (type . args) in segments
+                 collect `(insert (make-instance ',type ,@(removef args :name)) ,pipe))
+         (add-segment ,parent ,pipe)
+         (let ((,c (length (pipeline ,parent))))
+           ,@(loop for (i name) in names
+                   collect `(set-name ,parent (list ,c ,i) ,name)))
+         ,parent))))
+
+(defun make-standard-global-controller ()
+  (let ((pipeline (make-instance 'controller)))
+    (define-pipe pipeline
+      (level-filter :name 'repl-level-filter)
+      (category-tree-filter :name 'repl-category-filter)
+      (repl-faucet :name 'repl-faucet))
+    pipeline))
 
 (unless (find :verbose-no-init *features*)
   (unless *global-controller*

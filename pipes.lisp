@@ -1,39 +1,45 @@
 #|
-  This file is a part of Verbose
-  (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
-  Author: Nicolas Hafner <shinmera@tymoon.eu>
+ This file is a part of Verbose
+ (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
+ Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
 (in-package #:org.shirakumo.verbose)
 
-;; Backwards compat
-(defvar *repl-faucet-timestamp* *timestamp-format*)
+(defclass stream-faucet (faucet)
+  ((output :initarg :output :initform NIL :accessor output)))
 
-(defclass repl-faucet (faucet)
-  ())
+(defmethod pass ((faucet stream-faucet) message)
+  (when (output faucet)
+    (format-message faucet message))
+  message)
+
+(defmethod format-message :before ((faucet stream-faucet) thing)
+  (fresh-line (output faucet)))
+
+(defmethod format-message :after ((faucet stream-faucet) thing)
+  (terpri (output faucet))
+  (force-output (output faucet)))
+
+(defmethod format-message ((faucet stream-faucet) (message message))
+  (format-message (output faucet) message))
+
+(defclass repl-faucet (stream-faucet)
+  ((output :initform *standard-output*)))
 
 (defmethod print-object ((faucet repl-faucet) stream)
   (format stream ">>REPL")
   faucet)
 
-(defmethod pass ((faucet repl-faucet) message)
-  (format-message faucet message)
-  message)
-
-(defmethod format-message ((faucet repl-faucet) (message message))
-  (let ((*timestamp-format* *repl-faucet-timestamp*))
-    (format-message *standard-output* message)))
-
-(defclass file-faucet (faucet)
-  ((file :initform NIL :accessor faucet-file)
-   (stream :initform NIL :accessor faucet-stream))
+(defclass file-faucet (stream-faucet)
+  ((file :initform NIL :accessor file))
   (:default-initargs
    :file #p"verbose.log"))
 
 (defmethod initialize-instance :after ((faucet file-faucet) &key file)
-  (setf (faucet-file faucet) file))
+  (setf (file faucet) file))
 
-(defmethod (setf faucet-file) (file (faucet file-faucet))
+(defmethod (setf file) (file (faucet file-faucet))
   (with-slots (stream) faucet
     (when stream
       (close stream))
@@ -43,21 +49,21 @@
                               :if-does-not-exist :create))
       (setf (slot-value faucet 'file) file))))
 
-(defmethod pass ((faucet file-faucet) message)
-  (let ((stream (faucet-stream faucet)))
-    (when stream
-      (format-message stream message)))
-  message)
-
 (defclass rotating-file-faucet (file-faucet)
-  ((interval :initform :daily :initarg :interval :accessor interval)
+  ((interval :initform :daily :accessor interval)
    (last-rotation :initform 0 :accessor last-rotation)
    (template :initform NIL :initarg :template :initarg :file :accessor template)))
 
-(defmethod initialize-instance ((faucet rotating-file-faucet) &key)
+(defmethod initialize-instance ((faucet rotating-file-faucet) &key interval)
   (call-next-method)
+  (setf (itnerval faucet) interval)
   ;; Rotate before the file-faucet opens itself up.
   (rotate faucet))
+
+(defmethod (setf interval) (value (faucet rotating-file-faucet))
+  (ecase value
+    ((:hourly :daily :monthly :weekls)
+     (setf (slot-value faucet 'interval) value))))
 
 (defmethod pass :before ((faucet rotating-file-faucet) thing)
   (let ((pre (last-rotation faucet))
@@ -78,14 +84,22 @@
 (defmethod rotate ((faucet rotating-file-faucet) &optional new-file)
   (let ((time (setf (last-rotation faucet) (get-universal-time))))
     (cond (new-file
-           (setf (faucet-file faucet) new-file))
+           (setf (file faucet) new-file))
           (T
            (multiple-value-bind (s m h dd mm yy) (decode-universal-time time)
-             (setf (faucet-file faucet)
+             (setf (file faucet)
                    (make-pathname :name (format NIL "~4,'0d.~2,'0d.~2,'0d ~2,'0d:~2,'0d:~2,'0d~@[ ~a~]"
                                                 yy mm dd h m s (pathname-name (template faucet)))
                                   :defaults (template faucet))))))
     (setf (last-rotation faucet) time)))
+
+(defclass level-filter (filter)
+  ((level :initarg :level :initform :info :accessor filtered-level)))
+
+(defmethod pass ((filter level-filter) (message message))
+  (when (<= (position (filtered-level filter) *levels*)
+            (position (level message) *levels*))
+    message))
 
 (defclass category-filter (filter)
   ((categories :initarg :categories :initform T :accessor categories)))
@@ -118,61 +132,3 @@
             (loop for category in (categories filter)
                   thereis (find category (message-categories message) :test #'matching-tree-category)))
     message))
-
-(defclass level-filter (filter)
-  ((level :initarg :level :initform :info :accessor filtered-level)))
-
-(defmethod pass ((filter level-filter) (message message))
-  (when (message-visible message (filtered-level filter))
-    message))
-
-
-;; Backwards compat
-
-(defun make-cron-interval (string)
-  (destructuring-bind (m h dm mo dw) (split-sequence #\Space string)
-    (flet ((parse (a) (if (string= a "*") '* (parse-integer a))))
-      (clon:make-typed-cron-schedule
-       :minute (parse m) :hour (parse h) :day-of-month (parse dm) :month (parse mo) :day-of-week (parse dw)))))
-
-(defclass rotating-log-faucet (file-faucet)
-  ((time-format :initarg :time-format :accessor time-format)
-   (file-template :initarg :file-template :accessor file-template)
-   (interval :initarg :interval :accessor interval)
-   (scheduler :initform NIL :accessor scheduler)
-   (timer :initform NIL :accessor timer))
-  (:default-initargs
-   :time-format *repl-faucet-timestamp*
-   :file-template NIL
-   :interval (make-cron-interval "0 0 * * *")))
-
-(defmethod print-object ((faucet rotating-log-faucet) stream)
-  (format stream ">>ROTATE(~a)" (interval faucet))
-  faucet)
-
-(defmethod initialize-instance :after ((faucet rotating-log-faucet) &key)
-  (rotate-log faucet)
-  (update-interval faucet))
-
-(defmethod rotate-log ((faucet rotating-log-faucet))
-  (when (file-template faucet)
-    (setf (faucet-file faucet)
-          (merge-pathnames (format NIL "~a-~a"
-                                   (local-time:format-timestring NIL (local-time:now) :format (time-format faucet))
-                                   (pathname-name (file-template faucet)))
-                           (file-template faucet)))
-    (ensure-directories-exist (faucet-file faucet)))
-  (v:info :verbose.log "Rotated to new file ~a" (faucet-file faucet)))
-
-(defmethod update-interval ((faucet rotating-log-faucet) &optional (interval (interval faucet)))
-  (when (timer faucet) (trivial-timers:unschedule-timer (timer faucet)))
-  (when (stringp interval) (setf interval (make-cron-interval interval)))
-  (setf (interval faucet) interval
-        (scheduler faucet) (clon:make-scheduler interval)
-        (timer faucet) (clon:schedule-function #'(lambda () (rotate-log faucet)) (scheduler faucet))))
-
-(defmethod stop-rotation ((faucet rotating-log-faucet))
-  (when (timer faucet)
-    (trivial-timers:unschedule-timer (timer faucet)))
-  (setf (scheduler faucet) NIL
-        (timer faucet) NIL))
