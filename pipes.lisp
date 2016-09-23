@@ -97,8 +97,8 @@
   ((level :initarg :level :initform :info :accessor filtered-level)))
 
 (defmethod pass ((filter level-filter) (message message))
-  (when (<= (position (filtered-level filter) *levels*)
-            (position (level message) *levels*))
+  (when (<= (position (filtered-level filter) *levels* :key #'cdr)
+            (position (level message) *levels* :key #'cdr))
     message))
 
 (defclass category-filter (filter)

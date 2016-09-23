@@ -6,9 +6,7 @@
 
 (in-package #:org.shirakumo.verbose)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *levels* (list :TRACE :DEBUG :INFO :WARN :ERROR :SEVERE :FATAL)))
-
+(defvar *levels* NIL)
 (defvar *timestamp-format* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 (defvar *default-message-class* 'message)
 
@@ -50,10 +48,10 @@
 (defun log-message (level categories content &optional (class *default-message-class*) &rest initargs)
   (unless (listp categories)
     (setf categories (list categories)))
-  (assert (find level *levels*) (level)
-          "Level must be one of (:FATAL :SEVERE :ERROR :WARN :INFO :DEBUG :TRACE).")
-  (assert (every #'keywordp categories) (categories)
-          "Categories must be a list of keywords.")
+  (unless (find level *levels* :key #'cdr)
+    (error "Level must be one of ~a" (mapcar #'cdr *levels*)))
+  (unless (every #'keywordp categories) 
+    (error "Categories must be keywords."))
   (log-object (apply #'make-instance class :level level :categories categories :content content initargs)))
 
 (defmethod log (level categories (datum string) &rest args)
@@ -72,23 +70,27 @@
   (declare (ignore args))
   (log-message level categories datum))
 
-(defmacro define-level (level)
-  (let ((func (intern (symbol-name level) "VERBOSE")))
-    `(progn
-       (defun ,func (categories format-string &rest format-args)
-         (dissect:with-capped-stack ()
-           (apply #'log ',level categories format-string format-args)))
+(defmacro define-level (priority level &optional (name (intern (string level) :v)))
+  (check-type priority integer)
+  (check-type name symbol)
+  `(progn
+     (if (find ',level *levels* :key #'cdr)
+         (setf (car (find ',level *levels* :key #'cdr)) ,priority)
+         (push (cons ,priority ',level) *levels*))
+     (setf *levels* (sort *levels* #'< :key #'car))
 
-       (define-compiler-macro ,func (categories format-string &rest format-args)
-         `(funcall (load-time-value
-                    (progn
-                      (unless (find-package :verbose)
-                        #+quicklisp (ql:quickload :verbose :silent T)
-                        #-quicklisp (asdf:load-system :verbose))
-                      (find-symbol (string :log) :verbose)))
-                   ',,level ,categories ,format-string ,@format-args)))))
+     (defun ,name (categories datum &rest args)
+       (dissect:with-capped-stack ()
+         (apply #'log ',level categories datum args)))
 
-(macrolet ((define-all ()
-             `(progn ,@(loop for level in *levels*
-                             collect `(define-level ,level)))))
-  (define-all))
+     (define-compiler-macro ,name (categories datum &rest args)
+       `(dissect:with-capped-stack ()
+          (log ',',level ,categories ,datum ,@args)))))
+
+(define-level -10 :TRACE)
+(define-level  -5 :DEBUG)
+(define-level   0 :INFO)
+(define-level   5 :WARN)
+(define-level  10 :ERROR)
+(define-level  15 :SEVERE)
+(define-level  20 :FATAL)
