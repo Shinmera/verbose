@@ -152,9 +152,18 @@ These very basic functions is pretty much all the magic that Verbose uses intern
 
 Building custom faucets that output to a database or some other medium that isn't supported by files follows about the same procedure as making a custom filter. You subclass `piping:faucet` and add a method on `pass` that does what you need it to do. Then you instantiate your class and add that to the pipeline.
 
-Finally, if you need some more serious control over things and perhaps mess with the dispatch logic or something that I cannot really fathom right now, you might want to create your own controller type.
+If the logging levels provided by default are not sufficient for you and you'd like to add some or change them, you merely have to manipulate the `*levels*` variable. It describes the priority as an integer with the associated symbol. Defining new ones is merely a matter of using `add-level`. If you also would like a convenience function along with the standard levels, you can use `define-level` for that.
 
-FIXME: Write this shit.
+    (v:define-level -20 :whisper)
+    (v:whisper :somewhere "I'm a ghost.")
+    (v:add-level 100 'scream)
+    (v:log 'scream :somewhere "AAAA!!!")
+
+Finally, if you need some more serious control over things and perhaps mess with the dispatch logic or something that I cannot really fathom right now, you might want to create your own controller type. A controller needs to implement a couple of methods in order to function. You will most likely be interested in changing `pass` and `controller-loop`. The first is responsible for scheduling the message onto the controller or directly executing it if that is not allowed (by `*process-locally*`) or not possible. The second is responsible for doing whatever the background thread should be doing.
+
+In the default implementation, `pass` pushes the message onto a queue and then notifies a condition that should awake the controller thread. The controller thread then processes this queue by calling `pass` on its pipeline (an array) and each object in the queue. There's some more mechanics involved in order to reduce the potential impact for waiting that complicate this, but in essence that's all that happens.
+
+Also relevant might be `start` and `stop` which are responsible for setting up and tearing down any background mechanisms, if necessary. In the standard implementation this takes care of creating and shutting down the thread.
 
 ## Also See
 * [Piping](http://shinmera.github.io/piping/) Dynamic pipelines
