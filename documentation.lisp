@@ -426,6 +426,15 @@ See ROTATING-LOG-FAUCET")
 
 See ROTATING-LOG-FAUCET")
 
+  (type level-filter
+    "Only lets through messages that are of the given level or higher.
+
+LEVEL can be either the name of a level in *LEVELS* or an
+integer of the appropriate size.
+
+See LEVEL
+See PIPING:FILTER")
+
   (type category-filter
     "Only lets through messages that contain a category in the filter's categories list.
 
