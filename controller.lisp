@@ -69,7 +69,7 @@
                                  (pass pipeline thing)))))
                   (bt:acquire-lock lock)
                   (when (= 0 (length (message-pipe controller)))
-                    (bt:condition-wait condition lock))
+                    (bt:condition-wait condition lock :timeout 1))
                while (thread-continue controller))
       (setf (thread controller) NIL)
       (ignore-errors (bt:release-lock lock)))))
