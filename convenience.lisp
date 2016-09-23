@@ -64,7 +64,7 @@
           (insert segment pipe))
         (add-segment controller pipe)))))
 
-(defmacro define-pipe (pipeline &body segments)
+(defmacro define-pipe ((&optional (pipeline '*global-controller*) place) &body segments)
   (flet ((removef (plist &rest keys)
            (loop for (key val) on plist by #'cddr
                  for test = (find key keys)
@@ -81,7 +81,7 @@
              (,pipe (make-pipe)))
          ,@(loop for (type . args) in segments
                  collect `(insert (make-instance ',type ,@(removef args :name)) ,pipe))
-         (add-segment ,parent ,pipe)
+         (add-segment ,parent ,pipe ,place)
          (let ((,c (length (pipeline ,parent))))
            ,@(loop for (i name) in names
                    collect `(set-name ,parent (list ,c ,i) ,name)))
@@ -89,7 +89,7 @@
 
 (defun make-standard-global-controller ()
   (let ((pipeline (make-instance 'controller)))
-    (define-pipe pipeline
+    (define-pipe (pipeline)
       (level-filter :name 'repl-level-filter)
       (category-tree-filter :name 'repl-category-filter)
       (repl-faucet :name 'repl-faucet))

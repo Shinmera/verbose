@@ -99,13 +99,13 @@ What you'll most likely want to do is configure the controller to send messages 
 
 This is the simplest you can get, and sufficient if you just want to dump literally everything to a file. If you want to filter things, you'll need to stick a filter segment before it.
 
-    (v:define-pipe v:*global-controller*
+    (v:define-pipe ()
       (v:level-filter :level :error)
       (v:rotating-file-faucet :file #p"err.log"))
 
 You can add as many pipes you want, and stick as many filters before each as you like. For cheap "one-time use" filters that need a bit more work than the level-filter and category-filters offer, you can use piping's `predicate-filter`, which takes a predicate whose return value dictates whether the message should be let through.
 
-    (v:define-pipe v:*global-controller*
+    (v:define-pipe ()
       (piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:message-time m)))))
       (v:rotating-file-faucet :file #p"midnight.log"))
 
@@ -115,7 +115,7 @@ As mentioned before, everything else will need custom segments, which are discus
 On the most basic level you might want to customise how messages are printed. Since I don't expect there to be any intermediate libraries basing on Verbose, and instead it being usually used in an end-user application, the simplest way to get that done is to simply override the `format-message` method.
 
     (defmethod v:format-message ((stream stream) (message v:message))
-      (format stream "~&~a~%" (message-content message))
+      (format stream "~&~a~%" (v:content message))
       (force-output stream))
 
 If you don't like replacing code, you can instead subclass `message` and set it as the default class.
@@ -140,15 +140,15 @@ Next you might want to create a filter pipe segment of your own that does more c
 
 After adding the filter and a faucet to the pipeline as illustrated above, you'll likely want to get easy access to it again at a later point in order to be able to change its fields. To do this it pays off to give it a name. You can do this by adding a `:name` field to your `define-pipe` expression.
 
-    (v:define-pipe v:*global-controller*
+    (v:define-pipe ()
       (type-filter :name 'type-filter)
       (v:repl-faucet))
 
 After setting the name, you can retrieve your filter with `find-place`.
 
-    (piping:find-place v:*global-controller* 'type-filter)
+    (piping:find-place () 'type-filter)
 
-Using these very basic functions is pretty much all the magic that Verbose uses internally to provide you convenience functions like `repl-level` and `make-standard-global-controller`.
+These very basic functions is pretty much all the magic that Verbose uses internally to provide you convenience functions like `repl-level` and `make-standard-global-controller`.
 
 Building custom faucets that output to a database or some other medium that isn't supported by files follows about the same procedure as making a custom filter. You subclass `piping:faucet` and add a method on `pass` that does what you need it to do. Then you instantiate your class and add that to the pipeline.
 
@@ -158,4 +158,4 @@ FIXME: Write this shit.
 
 ## Also See
 * [Piping](http://shinmera.github.io/piping/) Dynamic pipelines
-* [Dissect](http://shinmera.github.io/dissect/) Conditions and stack-frame analysis
+* [Dissect](http://shinmera.github.io/dissect/) Stack-frame analysis
