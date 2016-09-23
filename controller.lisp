@@ -73,7 +73,7 @@
                       (setf (fill-pointer queue) 0)))
                   (bt:acquire-lock lock)
                   (when (= 0 (length (queue controller)))
-                    (bt:condition-wait condition lock :timeout 0.1))
+                    (bt:condition-wait condition lock :timeout 1))
                while (thread-continue controller))
       (setf (thread controller) NIL)
       (ignore-errors (bt:release-lock lock)))))
