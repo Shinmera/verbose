@@ -27,6 +27,9 @@
 
 (defmethod start ((controller controller))
   (setf (thread-continue controller) T)
+  (when (thread controller)
+    (cerror "Spawn a new thread anyway"
+            "There is already a thread set on the controller."))
   #+:thread-support
   (setf (thread controller)
         (bt:make-thread (lambda () (controller-loop controller))

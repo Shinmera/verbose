@@ -10,6 +10,7 @@
 (defvar *timestamp-format* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 (defvar *default-message-class* 'message)
 
+(declaim (inline log-object))
 (defun log-object (object)
   (when *global-controller*
     (pass *global-controller* object)))
@@ -26,6 +27,12 @@
    :level :info
    :categories ()
    :content NIL))
+
+(defmethod initialize-instance :before ((message message) &key level categories)
+  (unless (find level *levels* :key #'cdr)
+    (cl:error "Level must be one of ~a" (mapcar #'cdr *levels*)))
+  (unless (every #'keywordp categories) 
+    (cl:error "Categories must be keywords.")))
 
 (defmethod format-message ((stream stream) (message message))
   (format stream "~a [~5,a] ~{<~a>~}: ~a"
@@ -51,10 +58,6 @@
 (defun log-message (level categories content &optional (class *default-message-class*) &rest initargs)
   (unless (listp categories)
     (setf categories (list categories)))
-  (unless (find level *levels* :key #'cdr)
-    (error "Level must be one of ~a" (mapcar #'cdr *levels*)))
-  (unless (every #'keywordp categories) 
-    (error "Categories must be keywords."))
   (log-object (apply #'make-instance class :level level :categories categories :content content initargs)))
 
 (defmethod log (level categories (datum string) &rest args)
@@ -86,6 +89,7 @@
      (add-level ,priority ',level)
 
      (defun ,name (categories datum &rest args)
+       ,(format NIL "Log to the ~a level." level)
        (dissect:with-capped-stack ()
          (apply #'log ',level categories datum args)))
 
@@ -93,7 +97,10 @@
        `(dissect:with-capped-stack ()
           (log ',',level ,categories ,datum ,@args)))
 
-     (export ',name)))
+     ,(when (eql (symbol-package name)
+                 (find-package :v))
+        `(export ',name))
+     ',name))
 
 (define-level -10 :trace)
 (define-level  -5 :debug)

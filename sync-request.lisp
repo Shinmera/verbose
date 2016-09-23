@@ -16,11 +16,9 @@
   (bt:condition-notify (sync-request-condition sync)))
 
 (defun sync (&optional (controller *global-controller*))
-  (when (and (thread controller)
+  (when (and controller (thread controller)
              (bt:thread-alive-p (thread controller)))
     (let ((sync (make-sync-request)))
       (bt:with-lock-held ((sync-request-lock sync))
-        (with-controller-lock (controller)
-          (vector-push-extend sync (queue controller)))
-        (bt:condition-notify (queue-condition controller))
+        (pass controller sync)
         (bt:condition-wait (sync-request-condition sync) (sync-request-lock sync))))))

@@ -95,12 +95,25 @@
     (setf (last-rotation faucet) time)))
 
 (defclass level-filter (filter)
-  ((level :initarg :level :initform :info :accessor level)))
+  ((level :initform :info :accessor level))
+  (:default-initargs
+   :level :info))
+
+(defmethod initialize-instance :after ((filter level-filter) &key level)
+  (setf (level filter) level))
+
+(defmethod (setf level) :before (level (filter level-filter))
+  (unless (or (integerp level)
+              (find level *levels* :key #'cdr))
+    (cl:error "~a is neither a level in *LEVELS*, nor an integer." level)))
 
 (defmethod pass ((filter level-filter) (message message))
-  (when (<= (position (level filter) *levels* :key #'cdr)
-            (position (level message) *levels* :key #'cdr))
-    message))
+  (let ((level (level filter)))
+    (when (<= (if (integerp level)
+                  level
+                  (position level *levels* :key #'cdr))
+              (position (level message) *levels* :key #'cdr))
+      message)))
 
 (defclass category-filter (filter)
   ((categories :initarg :categories :initform T :accessor categories)))
