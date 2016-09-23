@@ -147,7 +147,7 @@ After adding the filter and a faucet to the pipeline as illustrated above, you'l
 
 After setting the name, you can retrieve your filter with `find-place`.
 
-    (piping:find-place () 'type-filter)
+    (piping:find-place v:*global-controller* 'type-filter)
 
 These very basic functions is pretty much all the magic that Verbose uses internally to provide you convenience functions like `repl-level` and `make-standard-global-controller`.
 
