@@ -108,7 +108,7 @@ This is the simplest you can get, and sufficient if you just want to dump litera
 You can add as many pipes you want, and stick as many filters before each as you like. For cheap "one-time use" filters that need a bit more work than the level-filter and category-filters offer, you can use piping's `predicate-filter`, which takes a predicate whose return value dictates whether the message should be let through.
 
     (v:define-pipe ()
-      (piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:message-time m)))))
+      (piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:timestamp m)))))
       (v:rotating-file-faucet :file #p"midnight.log"))
 
 As mentioned before, everything else will need custom segments, which are discussed in the next section.
@@ -165,6 +165,15 @@ Finally, if you need some more serious control over things and perhaps mess with
 In the default implementation, `pass` pushes the message onto a queue and then notifies a condition that should awake the controller thread. The controller thread then processes this queue by calling `pass` on its pipeline (an array) and each object in the queue. There's some more mechanics involved in order to reduce the potential impact for waiting that complicate this, but in essence that's all that happens.
 
 Also relevant might be `start` and `stop` which are responsible for setting up and tearing down any background mechanisms, if necessary. In the standard implementation this takes care of creating and shutting down the thread.
+
+## Upgrading from Verbose 1.x
+Verbose was one of the very early libraries that I've written in my years of lisp. As such it had somewhat poor style, naming ideas, and plans on how to go about things. In an effort to make Verbose more generally useful and easier to approach I decided that it would be in the best interest to drop all the cruft and change things around somewhat liberally. This means that Verbose 2.0 is incompatible with the previous 1.x.
+
+However, fear not. Most of the high-level interface is still the same. Logging works the same, the controller is in the same place and can be reset in the same way. Adding pipes still works as before. Things have mostly changed on the internals side, so if you did not extend or hack verbose extensively, you should be mostly fine.
+
+One thing to note in particular though is that there is no `rotating-log-faucet` anymore. It has been replaced by the `rotating-file-faucet`, which no longer works on CRON intervals, but instead on a less-flexible, but easier to manage set of fixed intervals.
+
+Other than that, I hope that the above documentation will serve as a good guide on how to replace the code that I have broken in the process. My apologies if you have been hit by this; I promise not to break things again in the near future.
 
 ## Also See
 * [Piping](http://shinmera.github.io/piping/) Dynamic pipelines
