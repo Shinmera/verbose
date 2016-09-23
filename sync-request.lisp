@@ -21,6 +21,6 @@
     (let ((sync (make-sync-request)))
       (bt:with-lock-held ((sync-request-lock sync))
         (with-controller-lock (controller)
-          (vector-push-extend sync (message-pipe controller)))
-        (bt:condition-notify (message-condition controller))
+          (vector-push-extend sync (queue controller)))
+        (bt:condition-notify (queue-condition controller))
         (bt:condition-wait (sync-request-condition sync) (sync-request-lock sync))))))

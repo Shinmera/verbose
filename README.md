@@ -72,7 +72,7 @@ When deploying an application the background thread might again cause problems a
 
 If you are accessing your Lisp image from multiple SLIME instances and the `*standard-output*` changes, you can use `v:output-here` to make it pick up the current standard output value again. Similarly, if you want to redirect the REPL output to another stream, you can do so by setting the shared value.
 
-    (v:output-here (open #p"~/some-file.log"))
+    (v:output-here (open #p"~/some-file.log" :direction :output))
 
 However, if you really want to log to a file, you should see the following section for a proper solution.
 
@@ -94,8 +94,8 @@ Especially in production environments you'll likely want to do something more th
 
 What you'll most likely want to do is configure the controller to send messages through a new pipe that will end in a faucet.
 
-    (v:define-pipe v:*global-controller*
-      (v:rotating-file-faucet :file #p"verbose.log")) 
+    (v:define-pipe ()
+      (v:rotating-file-faucet :template #p"verbose.log"))
 
 This is the simplest you can get, and sufficient if you just want to dump literally everything to a file. If you want to filter things, you'll need to stick a filter segment before it.
 
@@ -115,8 +115,7 @@ As mentioned before, everything else will need custom segments, which are discus
 On the most basic level you might want to customise how messages are printed. Since I don't expect there to be any intermediate libraries basing on Verbose, and instead it being usually used in an end-user application, the simplest way to get that done is to simply override the `format-message` method.
 
     (defmethod v:format-message ((stream stream) (message v:message))
-      (format stream "~&~a~%" (v:content message))
-      (force-output stream))
+      (format stream "~&~a~%" (v:content message)))
 
 If you don't like replacing code, you can instead subclass `message` and set it as the default class.
 

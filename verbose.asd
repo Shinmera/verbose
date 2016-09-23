@@ -14,6 +14,7 @@
   :homepage "https://github.com/Shinmera/verbose"
   :serial T
   :components ((:file "package")
+               (:file "toolkit")
                (:file "controller")
                (:file "message")
                (:file "pipes")

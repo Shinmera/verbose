@@ -17,6 +17,6 @@
   (declare (ignore args))
   (let ((content (if *verbose-conditions*
                      (with-output-to-string (stream)
-                       (dissect:present condition stream))
-                     (princ-to-string condition))))
-    (log-message level categories content 'condition-message :condition condition)))
+                       (dissect:present datum stream))
+                     (princ-to-string datum))))
+    (log-message level categories content 'condition-message :condition datum)))

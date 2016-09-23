@@ -37,6 +37,9 @@
 (defmethod format-message ((null null) message)
   (princ-to-string message))
 
+(defmethod format-message ((null null) (func function))
+  (princ-to-string (funcall func)))
+
 (defmethod format-message ((null null) (message message))
   (with-output-to-string (stream)
     (format-message stream message)))
@@ -58,7 +61,7 @@
   (log-message level categories (apply #'format NIL datum args)))
 
 (defmethod log (level categories (datum symbol) &rest args)
-  (log level categories (apply (if (typep class 'condition-class)
+  (log level categories (apply (if (subtypep datum 'condition)
                                    #'make-condition
                                    #'make-instance)
                                datum args)))
@@ -88,7 +91,9 @@
 
      (define-compiler-macro ,name (categories datum &rest args)
        `(dissect:with-capped-stack ()
-          (log ',',level ,categories ,datum ,@args)))))
+          (log ',',level ,categories ,datum ,@args)))
+
+     (export ',name)))
 
 (define-level -10 :trace)
 (define-level  -5 :debug)

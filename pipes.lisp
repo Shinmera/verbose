@@ -40,24 +40,25 @@
   (setf (file faucet) file))
 
 (defmethod (setf file) (file (faucet file-faucet))
-  (with-slots (stream) faucet
-    (when stream
-      (close stream))
+  (with-slots (output) faucet
+    (when output
+      (close output))
     (when file
-      (setf stream (open file :direction :output
+      (setf output (open file :direction :output
                               :if-exists :append
                               :if-does-not-exist :create))
       (setf (slot-value faucet 'file) file))))
 
 (defclass rotating-file-faucet (file-faucet)
-  ((interval :initform :daily :accessor interval)
+  ((interval :initform NIL :accessor interval)
    (last-rotation :initform 0 :accessor last-rotation)
-   (template :initform NIL :initarg :template :initarg :file :accessor template)))
+   (template :initform NIL :initarg :template :accessor template))
+  (:default-initargs
+   :interval :daily
+   :file NIL))
 
-(defmethod initialize-instance ((faucet rotating-file-faucet) &key interval)
-  (call-next-method)
-  (setf (itnerval faucet) interval)
-  ;; Rotate before the file-faucet opens itself up.
+(defmethod initialize-instance :after ((faucet rotating-file-faucet) &key interval)
+  (setf (interval faucet) interval)
   (rotate faucet))
 
 (defmethod (setf interval) (value (faucet rotating-file-faucet))
@@ -94,10 +95,10 @@
     (setf (last-rotation faucet) time)))
 
 (defclass level-filter (filter)
-  ((level :initarg :level :initform :info :accessor filtered-level)))
+  ((level :initarg :level :initform :info :accessor level)))
 
 (defmethod pass ((filter level-filter) (message message))
-  (when (<= (position (filtered-level filter) *levels* :key #'cdr)
+  (when (<= (position (level filter) *levels* :key #'cdr)
             (position (level message) *levels* :key #'cdr))
     message))
 
@@ -107,15 +108,15 @@
 (defmethod pass ((filter category-filter) (message message))
   (when (or (eql (categories filter) T)
             (loop for category in (categories filter)
-                  thereis (find category (message-categories message))))
+                  thereis (find category (categories message))))
     message))
 
 (defclass category-tree-filter (category-filter)
   ())
 
 (defun matching-tree-category (filter category)
-  (let ((category-leaves (split-sequence #\. (string-upcase category)))
-        (filter-leaves (split-sequence #\. (string-upcase filter))))
+  (let ((category-leaves (split (string-upcase category) #\.))
+        (filter-leaves (split (string-upcase filter) #\.)))
     (loop for catl in category-leaves
        for fill in filter-leaves
        do (cond
@@ -130,5 +131,5 @@
 (defmethod pass ((filter category-tree-filter) (message message))
   (when (or (eql (categories filter) T)
             (loop for category in (categories filter)
-                  thereis (find category (message-categories message) :test #'matching-tree-category)))
+                  thereis (find category (categories message) :test #'matching-tree-category)))
     message))

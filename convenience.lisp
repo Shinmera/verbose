@@ -16,10 +16,10 @@
   (setf *global-controller* (make-standard-global-controller)))
 
 (defun repl-level (&optional (controller *global-controller*))
-  (filtered-level (find-place controller 'repl-level-filter)))
+  (level (find-place controller 'repl-level-filter)))
 
 (defun (setf repl-level) (level &optional (controller *global-controller*))
-  (setf (filtered-level (find-place controller 'repl-level-filter)) level))
+  (setf (level (find-place controller 'repl-level-filter)) level))
 
 (defun repl-categories (&optional (controller *global-controller*))
   (with-controller-lock ()
@@ -65,27 +65,23 @@
         (add-segment controller pipe)))))
 
 (defmacro define-pipe ((&optional (pipeline '*global-controller*) place) &body segments)
-  (flet ((removef (plist &rest keys)
-           (loop for (key val) on plist by #'cddr
-                 for test = (find key keys)
-                 unless test collect key
-                 unless test collect val)))
-    (let ((names (loop for i from 0
-                       for segment in segments
-                       for name = (getf (rest segment) :name)
-                       when name collect (list i name)))
-          (pipe (gensym "PIPE"))
-          (parent (gensym "PARENT"))
-          (c (gensym "C")))
-      `(let ((,parent ,pipeline)
-             (,pipe (make-pipe)))
-         ,@(loop for (type . args) in segments
-                 collect `(insert (make-instance ',type ,@(removef args :name)) ,pipe))
-         (add-segment ,parent ,pipe ,place)
-         (let ((,c (length (pipeline ,parent))))
-           ,@(loop for (i name) in names
-                   collect `(set-name ,parent (list ,c ,i) ,name)))
-         ,parent))))
+  (let ((names (loop for i from 0
+                     for segment in segments
+                     for name = (getf (rest segment) :name)
+                     when name collect (list i name)))
+        (pipe (gensym "PIPE"))
+        (parent (gensym "PARENT"))
+        (c (gensym "C")))
+    `(let ((,parent ,pipeline)
+           (,pipe (make-pipe)))
+       ,@(loop for (type . args) in segments
+               collect `(insert (make-instance ',type ,@(removef args :name)) ,pipe))
+       (add-segment ,parent ,pipe ,place)
+       ,(when names
+          `(let ((,c (1- (length (pipeline ,parent)))))
+             ,@(loop for (i name) in names
+                     collect `(set-name ,parent (list ,c ,i) ,name))))
+       ,parent)))
 
 (defun make-standard-global-controller ()
   (let ((pipeline (make-instance 'controller)))
