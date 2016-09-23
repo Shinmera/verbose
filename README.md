@@ -79,16 +79,18 @@ However, if you really want to log to a file, you should see the following secti
 ## Customising Verbose
 Especially in production environments you'll likely want to do something more than simply logging to the REPL. This is where the aforementioned pipeline system comes in. Verbose offers a couple of standard pipe segments that should be sufficient for most purposes. If you need more than that, see the next section.
 
+* `stream-faucet`  
+  Simply writes messages to a stream by `format-message`.
 * `repl-faucet`  
-  Formats messages by `format-message` and prints them to the REPL. Uses `*timestamp-format*` for the local-time timestamp format.
+  Inherits from `stream-faucet` and merely defaults the stream to `*standard-output*`.
 * `file-faucet`  
-  Formats messages by `format-message` and prints them to a file. Uses `*timestamp-format*` for the local-time timestamp format.
+  Inherits from `stream-faucet` and just manages opening/closing the stream to the file.
 * `rotating-file-faucet`  
-  Similar to the file-faucet, but rotates the log file to a new one in a specified interval. This is recommended for very long-running instances.
+  Inherits from `file-faucet`, but rotates the log file to a new one in a specified interval. This is recommended for very long-running instances.
 * `category-filter`  
   Only lets through messages of which one or more categories match the internal `categories` list.
 * `category-tree-filter`  
-  Similar to the category-filter but implementing tree-like filtering by interpreting each category as a branch with dots separating the segments.
+  Inherits from `category-filter`, but filters tree-like by interpreting each category as a branch with dots separating the segments.
 * `level-filter`  
   Only lets through messages which are on a level equal to or higher than the `filtered-level`.
 
