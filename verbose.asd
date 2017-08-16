@@ -4,7 +4,6 @@
   Author: Nicolas Hafner <shinmera@tymoon.eu>
 |#
 
-(in-package #:cl-user)
 (asdf:defsystem verbose
   :name "Verbose"
   :version "2.0.0"
