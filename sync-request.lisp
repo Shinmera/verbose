@@ -10,7 +10,7 @@
   (condition (bt:make-condition-variable))
   (lock (bt:make-lock)))
 
-(defmethod pass ((array array) (sync sync-request))
+(defmethod pass ((vector vector) (sync sync-request))
   ;; Make sure it's actually waiting on the condition.
   (bt:with-lock-held ((sync-request-lock sync)))
   (bt:condition-notify (sync-request-condition sync)))
