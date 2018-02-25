@@ -63,7 +63,7 @@
 
 (defmethod (setf interval) (value (faucet rotating-file-faucet))
   (ecase value
-    ((:hourly :daily :monthly :weekls)
+    ((:hourly :daily :monthly :weekly)
      (setf (slot-value faucet 'interval) value))))
 
 (defmethod pass :before ((faucet rotating-file-faucet) thing)
