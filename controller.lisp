@@ -17,8 +17,8 @@
    (queue-condition :initform (bt:make-condition-variable :name "MESSAGE-CONDITION") :reader queue-condition)
    (queue-lock :initform (bt:make-lock "MESSAGE-LOCK") :reader queue-lock)))
 
-(defmethod initialize-instance :after ((controller controller) &key)
-  (start controller))
+(defmethod initialize-instance :after ((controller controller) &key dont-start)
+  (unless dont-start (start controller)))
 
 (defmethod print-object ((controller controller) stream)
   (print-unreadable-object (controller stream :type T)

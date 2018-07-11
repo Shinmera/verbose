@@ -54,7 +54,9 @@ do this with STOP.")
 
 By default a background thread is spawned that processes the
 messages. You can control the thread with START and STOP and
-enqueue messages with PASS.
+enqueue messages with PASS. You can prevent the controller
+from being automatically STARTed by passing :DONT-START T as
+an initarg.
 
 See THREAD
 See THREAD-CONTINUE
