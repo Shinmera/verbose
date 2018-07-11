@@ -150,7 +150,8 @@ See *GLOBAL-CONTROLLER*")
     "Replaces the current global controller (if any) with a freshly allocated one.
 
 In case things really messed up somehow, this may resolve your problems
-at the cost of throwing away messages that are still queued up.
+at the cost of throwing away messages that are still queued up, and
+restoring the standard pipeline.
 
 See REMOVE-GLOBAL-CONTROLLER
 See *GLOBAL-CONTROLLER*
@@ -216,6 +217,9 @@ See PIPING:FIND-PLACE")
     "Constructs a new controller object with a single pipe in the pipeline
 
 The pipe has a level-filter, category-tree-filter, and repl-faucet.
+
+All arguments to this function are simply passed as initargs to
+the construction of the CONTROLLER instance.
 
 See LEVEL-FILTER
 See CATEGORY-TREE-FILTER

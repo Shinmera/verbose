@@ -83,14 +83,13 @@
                      collect `(set-name ,parent (list ,c ,i) ,name))))
        ,parent)))
 
-(defun make-standard-global-controller ()
-  (let ((pipeline (make-instance 'controller)))
+(defun make-standard-global-controller (&rest initargs)
+  (let ((pipeline (apply #'make-instance 'controller initargs)))
     (define-pipe (pipeline)
       (level-filter :name 'repl-level-filter)
       (category-tree-filter :name 'repl-category-filter)
       (repl-faucet :name 'repl-faucet))
     pipeline))
 
-(unless (find :verbose-no-init *features*)
-  (unless *global-controller*
-    (setf *global-controller* (make-standard-global-controller))))
+(setf *global-controller*
+      (make-standard-global-controller :dont-start (find :verbose-no-init *features*)))

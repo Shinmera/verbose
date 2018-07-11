@@ -68,7 +68,7 @@ Finally we come to the last feature to do with categories. You can muffle catego
 
 The `with-muffled-logging` simply binds `*muffled-categories*`, which is a list of muffled categories or `T` for everything, just like for the category filter.
 
-When deploying an application the background thread might again cause problems as it is started by default and dumping an image with threads alive is not possible. Thus, you should call `stop` on `*global-controller*` before dumping and `start` after resuming the image. Alternatively you can push `:verbose-no-init` onto `*features*` before loading Verbose and then run something similar to `(setf v:*global-controller* (v:make-standard-global-controller))` upon startup.
+When deploying an application the background thread might again cause problems as it is started by default and dumping an image with threads alive is not possible. Thus, you should call `stop` on `*global-controller*` before dumping and `start` after resuming the image. Alternatively you can push `:verbose-no-init` onto `*features*` before loading Verbose and then run `start` manually.
 
 If you are accessing your Lisp image from multiple SLIME instances and the `*standard-output*` changes, you can use `v:output-here` to make it pick up the current standard output value again. Similarly, if you want to redirect the REPL output to another stream, you can do so by setting the shared value.
 
