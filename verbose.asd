@@ -10,7 +10,9 @@
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "Artistic"
   :description "A logging framework using the piping library."
-  :homepage "https://github.com/Shinmera/verbose"
+  :homepage "https://Shinmera.github.io/verbose/"
+  :bug-tracker "https://github.com/Shinmera/verbose/issues"
+  :source-control (:git "https://github.com/Shinmera/verbose.git")
   :serial T
   :components ((:file "package")
                (:file "toolkit")
