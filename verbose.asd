@@ -8,7 +8,7 @@
   :name "Verbose"
   :version "2.0.0"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
-  :license "Artistic"
+  :license "zlib"
   :description "A logging framework using the piping library."
   :homepage "https://Shinmera.github.io/verbose/"
   :bug-tracker "https://github.com/Shinmera/verbose/issues"
