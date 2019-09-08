@@ -64,16 +64,16 @@
          (pipeline (pipeline controller)))
     (bt:acquire-lock lock)
     (unwind-protect
-         (loop do (with-simple-restart (skip "Skip processing the message batch.")
-                    (let ((queue (queue controller)))
-                      (rotatef (queue controller) (queue-back controller))
-                      (bt:release-lock lock)
+         (loop do (let ((queue (queue controller)))
+                    (rotatef (queue controller) (queue-back controller))
+                    (bt:release-lock lock)
+                    (with-simple-restart (skip "Skip processing the message batch.")
                       (loop for i from 0
                             for thing across queue
                             do (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
                                  (pass pipeline thing))
-                               (setf (aref queue i) 0))
-                      (setf (fill-pointer queue) 0)))
+                               (setf (aref queue i) 0)))
+                    (setf (fill-pointer queue) 0))
                   (bt:acquire-lock lock)
                   (loop while (= 0 (length (queue controller)))
                         do (unless (bt:condition-wait condition lock :timeout 1)
