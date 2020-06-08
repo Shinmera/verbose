@@ -76,12 +76,7 @@
                     (setf (fill-pointer queue) 0))
                   (bt:acquire-lock lock)
                   (loop while (= 0 (length (queue controller)))
-                        do (unless (bt:condition-wait condition lock :timeout 1)
-                             ;; KLUDGE: ECL seems to sometimes return NIL from CONDITION-WAIT
-                             ;;         with the lock still held in the current thread. No good.
-                             (unless #+ecl (eq (bt:current-thread) (mp:lock-owner lock))
-                                     #-ecl NIL
-                               (bt:acquire-lock lock))))
+                        do (bt:condition-wait condition lock :timeout 1))
                while (thread-continue controller))
       (setf (thread controller) NIL)
       (ignore-errors (bt:release-lock lock)))))
