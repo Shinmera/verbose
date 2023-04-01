@@ -6,7 +6,7 @@
 
 (asdf:defsystem verbose
   :name "Verbose"
-  :version "2.0.0"
+  :version "2.1.0"
   :author "Nicolas Hafner <shinmera@tymoon.eu>"
   :license "zlib"
   :description "A logging framework using the piping library."

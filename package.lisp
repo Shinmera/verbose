@@ -6,8 +6,7 @@
 
 (in-package #:cl-user)
 (push :verbose *features*)
-(defpackage #:verbose
-  (:nicknames #:v #:org.shirakumo.verbose)
+(defpackage #:org.shirakumo.verbose
   (:use :cl :piping)
   (:shadow #:log #:error #:warn #:debug #:trace)
   ;; conditions.lisp
