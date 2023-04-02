@@ -82,7 +82,7 @@
       (push (cons priority level) *levels*))
   (setf *levels* (sort *levels* #'< :key #'car)))
 
-(defmacro define-level (priority level &optional (name (intern (string level) :v)))
+(defmacro define-level (priority level &optional (name (intern (string level) '#:org.shirakumo.verbose)))
   (check-type priority integer)
   (check-type name symbol)
   `(progn
@@ -97,8 +97,7 @@
        `(dissect:with-capped-stack ()
           (log ',',level ,categories ,datum ,@args)))
 
-     ,(when (eql (symbol-package name)
-                 (find-package :v))
+     ,(when (eql (symbol-package name) (find-package '#:org.shirakumo.verbose))
         `(export ',name))
      ',name))
 
