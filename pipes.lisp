@@ -47,7 +47,8 @@
       (setf output (open file :direction :output
                               :if-exists :append
                               :if-does-not-exist :create
-                              :external-format :utf-8))
+                              :external-format :utf-8
+                              #+ccl :sharing #+ccl NIL))
       (setf (slot-value faucet 'file) file))))
 
 (defclass rotating-file-faucet (file-faucet)
