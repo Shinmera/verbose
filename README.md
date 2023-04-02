@@ -3,7 +3,12 @@ Load Verbose with ASDF or Quicklisp.
 
     (ql:quickload :verbose)
 
-Since I expect that logging will be a somewhat frequent need, the Verbose package is aliased to the single letter `v`. Under normal circumstances, Verbose starts itself up automatically after you've loaded it, so you can dive right in and log things.
+Under normal circumstances, Verbose starts itself up automatically after you've loaded it, so you can dive right in and log things. You'll want to add a local nickname for verbose to use it easily though, such as `v`, which we'll be using in this tutorial.
+
+    (defpackage #:my-package
+      (:use #:cl)
+      (:local-nicknames
+        (#:v #:org.shirakumo.verbose)))
 
     (v:log :info :intro "Hello!")
     
