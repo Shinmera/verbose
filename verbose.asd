@@ -1,13 +1,7 @@
-#|
-  This file is a part of Verbose
-  (c) 2013 Shirakumo http://tymoon.eu (shinmera@tymoon.eu)
-  Author: Nicolas Hafner <shinmera@tymoon.eu>
-|#
-
 (asdf:defsystem verbose
   :name "Verbose"
   :version "2.1.0"
-  :author "Nicolas Hafner <shinmera@tymoon.eu>"
+  :author "Yukari Hafner <shinmera@tymoon.eu>"
   :license "zlib"
   :description "A logging framework using the piping library."
   :homepage "https://Shinmera.github.io/verbose/"
