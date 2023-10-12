@@ -79,16 +79,10 @@
 
 (defun make-standard-global-controller (&rest initargs)
   (let ((pipeline (apply #'make-instance 'controller initargs)))
-    (if (and (uiop:getenvp "TERM")
-             (not (string-equal "dumb" (uiop:getenv "TERM"))))
-        (define-pipe (pipeline)
-          (level-filter :name 'repl-level-filter)
-          (category-tree-filter :name 'repl-category-filter)
-          (term-faucet :name 'repl-faucet))
-        (define-pipe (pipeline)
-          (level-filter :name 'repl-level-filter)
-          (category-tree-filter :name 'repl-category-filter)
-          (repl-faucet :name 'repl-faucet)))
+    (define-pipe (pipeline)
+      (level-filter :name 'repl-level-filter)
+      (category-tree-filter :name 'repl-category-filter)
+      (repl-faucet :name 'repl-faucet))
     pipeline))
 
 (setf *global-controller*

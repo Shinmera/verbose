@@ -60,6 +60,7 @@
    #:stream-faucet
    #:output
    #:repl-faucet
+   #:ansi-colors
    #:file-faucet
    #:file
    #:rotating-file-faucet
