@@ -21,7 +21,7 @@
 (defclass repl-faucet (stream-faucet)
   ((output :initform *standard-output*)
    (ansi-colors :initform (and (uiop:getenvp "TERM")
-                               (not (string-equal "dumb" (uiop:getenv "TERM"))))
+                               (not (find (uiop:getenv "TERM") '("dumb" "linux") :test #'string-equal)))
                 :accessor ansi-colors)))
 
 (defmethod print-object ((faucet repl-faucet) stream)
