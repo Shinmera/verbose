@@ -17,3 +17,11 @@
   `(let ((*muffled-categories* (list* ,category ,@more-categories *muffled-categories*)))
      ,@body))
 
+(defmacro with-muffled-logging* ((&optional (category T) &rest more-categories) &body body)
+  (let ((original-categories (gensym (string 'original-categories))))
+    `(let ((,original-categories *muffled-categories*))
+       (setf *muffled-categories* (list* ,category ,@more-categories *muffled-categories*))
+       (unwind-protect
+            (progn ,@body)
+         (setf *muffled-categories* ,original-categories)))))
+

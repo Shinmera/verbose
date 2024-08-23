@@ -344,12 +344,26 @@ When a category is muffled, it is effectively removed from the
 message. If a message has no categories whatsoever, it is not
 issued.
 
-See WITH-MUFFLED-LOGGING")
+See WITH-MUFFLED-LOGGING
+See WITH-MUFFLED-LOGGING*")
 
   (function with-muffled-logging
+    "Adds the requested categories to the list of muffled categories within the body.
+
+This change is only visible to the current thread and within the
+execution context of BODY.
+
+See *MUFFLED-CATEGORIES*
+See WITH-MUFFLED-LOGGING*")
+
+  (function with-muffled-logging*
     "Adds the requested categories to the list of muffled categories.
 
-See *MUFFLED-CATEGORIES*"))
+Unlike WITH-MUFFLED-LOGGING the change to the categories will be
+visible to all threads that didn't bind *MUFFLED-CATEGORIES*.
+
+See *MUFFLED-CATEGORIES*
+See WITH-MUFFLED-LOGGING"))
 
 ;; pipes.lisp
 (docs:define-docs

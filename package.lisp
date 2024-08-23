@@ -54,7 +54,8 @@
   ;; muffling.lisp
   (:export
    #:*muffled-categories*
-   #:with-muffled-logging)
+   #:with-muffled-logging
+   #:with-muffled-logging*)
   ;; pipes.lisp
   (:export
    #:stream-faucet
