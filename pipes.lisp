@@ -18,10 +18,19 @@
 (defmethod format-message ((faucet stream-faucet) (message message))
   (format-message (output faucet) message))
 
+(defun getenv (x)
+  #+(or abcl clasp clisp ecl xcl) (ext:getenv x)
+  #+allegro (sys:getenv x)
+  #+clozure (ccl:getenv x)
+  #+cmucl (unix:unix-getenv x)
+  #+lispworks (lispworks:environment-variable x)
+  #+sbcl (sb-ext:posix-getenv x)
+  #-(or abcl clasp clisp ecl xcl allegro clozure cmucl lispworks sbcl)
+  NIL)
+
 (defclass repl-faucet (stream-faucet)
   ((output :initform *standard-output*)
-   (ansi-colors :initform (and (uiop:getenvp "TERM")
-                               (not (find (uiop:getenv "TERM") '("dumb" "linux") :test #'string-equal)))
+   (ansi-colors :initform (not (find (or (getenv "TERM") "") '("" "dumb" "linux") :test #'string-equal))
                 :accessor ansi-colors)))
 
 (defmethod print-object ((faucet repl-faucet) stream)
