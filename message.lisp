@@ -29,7 +29,7 @@
 
 (defmethod format-message ((stream stream) (message message))
   (format stream "~a [~5,a] ~{<~a>~}: ~a"
-          (format-time (timestamp message))
+          (format-time :timestamp (timestamp message))
           (level message)
           (categories message)
           (format-message NIL (content message))))
