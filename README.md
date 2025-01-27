@@ -113,7 +113,7 @@ This is the simplest you can get, and sufficient if you just want to dump litera
 You can add as many pipes you want, and stick as many filters before each as you like. For cheap "one-time use" filters that need a bit more work than the level-filter and category-filters offer, you can use piping's `predicate-filter`, which takes a predicate whose return value dictates whether the message should be let through.
 
     (v:define-pipe ()
-      (piping:predicate-filter :predicate (lambda (m) (= 0 (local-time:timestamp-hour (v:timestamp m)))))
+      (piping:predicate-filter :predicate (lambda (m) (= 0 (nth-value 2 (decode-universal-time (v:timestamp m))))))
       (v:rotating-file-faucet :file #p"midnight.log"))
 
 As mentioned before, everything else will need custom segments, which are discussed in the next section.

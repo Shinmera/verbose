@@ -233,7 +233,16 @@ See DEFINE-LEVEL")
   (variable *timestamp-format*
     "The format in which timestamps will be formatted for messages.
 
-See LOCAL-TIME:FORMAT-TIMESTRING")
+The format should be a list of specs, each of which can be:
+  STRING
+  CHARACTER
+  (THING LENGTH) --- Where THING can be one of:
+    :year :y
+    :month :m
+    :day :d
+    :hour :h :hh
+    :min :mm
+    :sec :s :ss")
 
   (variable *default-message-class*
     "The class designator of the message class to use when logging messages.")
@@ -256,9 +265,8 @@ See FORMAT-MESSAGE
 See LOG-MESSAGE")
 
   (function timestamp
-    "The timestamp recorded from the time of issuing of the message.
+    "The universal-time timestamp recorded from the time of issuing of the message.
 
-See LOCAL-TIME:TIMESTAMP
 See MESSAGE")
 
   (function level

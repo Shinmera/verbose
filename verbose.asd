@@ -20,7 +20,6 @@
                (:file "sync-request")
                (:file "documentation"))
   :depends-on (:piping
-               :local-time
                :bordeaux-threads
                :dissect
                :documentation-utils))

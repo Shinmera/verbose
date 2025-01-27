@@ -1,7 +1,6 @@
 (in-package #:org.shirakumo.verbose)
 
 (defvar *levels* NIL)
-(defvar *timestamp-format* '((:year 4) #\- (:month 2) #\- (:day 2) #\Space (:hour 2) #\: (:min 2) #\: (:sec 2)))
 (defvar *default-message-class* 'message)
 
 (declaim (inline log-object))
@@ -16,7 +15,7 @@
    (categories :initarg :categories :accessor categories)
    (content :initarg :content :accessor content))
   (:default-initargs
-   :timestamp (local-time:now)
+   :timestamp (get-universal-time)
    :thread (bt:current-thread)
    :level :info
    :categories ()
@@ -30,7 +29,7 @@
 
 (defmethod format-message ((stream stream) (message message))
   (format stream "~a [~5,a] ~{<~a>~}: ~a"
-          (local-time:format-timestring NIL (timestamp message) :format *timestamp-format*)
+          (format-time (timestamp message))
           (level message)
           (categories message)
           (format-message NIL (content message))))
