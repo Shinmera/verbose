@@ -1,5 +1,7 @@
 (in-package #:org.shirakumo.verbose)
 
+(defvar *ansi-colors*)
+
 (defclass stream-faucet (faucet)
   ((output :initarg :output :initform NIL :accessor output)))
 
@@ -18,10 +20,14 @@
 (defmethod format-message ((faucet stream-faucet) (message message))
   (format-message (output faucet) message))
 
+(defun ansi-term-p ()
+  (if (boundp '*ansi-colors*)
+      *ansi-colors*
+      (not (find (or (getenv "TERM") "") '("" "dumb" "linux") :test #'string-equal))))
+
 (defclass repl-faucet (stream-faucet)
   ((output :initform *standard-output*)
-   (ansi-colors :initform (not (find (or (getenv "TERM") "") '("" "dumb" "linux") :test #'string-equal))
-                :accessor ansi-colors)))
+   (ansi-colors :initform (ansi-term-p) :accessor ansi-colors)))
 
 (defmethod print-object ((faucet repl-faucet) stream)
   (format stream ">>REPL")
