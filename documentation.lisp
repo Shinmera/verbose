@@ -361,6 +361,9 @@ See WITH-MUFFLED-LOGGING*")
 This change is only visible to the current thread and within the
 execution context of BODY.
 
+If CATEGORY is NIL, this acts as an override instead and only the
+listed categories are muffled.
+
 See *MUFFLED-CATEGORIES*
 See WITH-MUFFLED-LOGGING*")
 
@@ -369,6 +372,9 @@ See WITH-MUFFLED-LOGGING*")
 
 Unlike WITH-MUFFLED-LOGGING the change to the categories will be
 visible to all threads that didn't bind *MUFFLED-CATEGORIES*.
+
+If CATEGORY is NIL, this acts as an override instead and only the
+listed categories are muffled.
 
 See *MUFFLED-CATEGORIES*
 See WITH-MUFFLED-LOGGING"))

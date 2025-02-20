@@ -14,13 +14,17 @@
       (call-next-method))))
 
 (defmacro with-muffled-logging ((&optional (category T) &rest more-categories) &body body)
-  `(let ((*muffled-categories* (list* ,category ,@more-categories *muffled-categories*)))
+  `(let ((*muffled-categories* ,(if category
+                                    `(list* ,category ,@more-categories *muffled-categories*)
+                                    `(list ,@more-categories))))
      ,@body))
 
 (defmacro with-muffled-logging* ((&optional (category T) &rest more-categories) &body body)
   (let ((original-categories (gensym (string 'original-categories))))
     `(let ((,original-categories *muffled-categories*))
-       (setf *muffled-categories* (list* ,category ,@more-categories *muffled-categories*))
+       (setf *muffled-categories* ,(if category
+                                       `(list* ,category ,@more-categories *muffled-categories*)
+                                       `(list ,@more-categories)))
        (unwind-protect
             (progn ,@body)
          (setf *muffled-categories* ,original-categories)))))
