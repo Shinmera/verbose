@@ -2,6 +2,22 @@
 
 (defvar *ansi-colors*)
 
+(defmethod stop ((segment segment)))
+
+(defmethod stop ((pipeline pipeline))
+  (stop (pipeline pipeline)))
+
+(defmethod stop ((pipeline vector))
+  (map NIL #'stop pipeline))
+
+(defmethod start ((segment segment)))
+
+(defmethod start ((pipeline pipeline))
+  (start (pipeline pipeline)))
+
+(defmethod start ((pipeline vector))
+  (map NIL #'start pipeline))
+
 (defclass stream-faucet (faucet)
   ((output :initarg :output :initform NIL :accessor output)))
 
@@ -19,6 +35,9 @@
 
 (defmethod format-message ((faucet stream-faucet) (message message))
   (format-message (output faucet) message))
+
+(defmethod stop ((faucet stream-faucet))
+  (close (output faucet)))
 
 (defun ansi-term-p ()
   (if (boundp '*ansi-colors*)
@@ -73,6 +92,8 @@
             (:fatal (msg 0 11)))))
       (call-next-method)))
 
+(defmethod stop ((faucet repl-faucet)))
+
 (defclass file-faucet (stream-faucet)
   ((file :initform NIL :accessor file))
   (:default-initargs
@@ -92,6 +113,9 @@
                               :external-format :utf-8
                               #+ccl :sharing #+ccl NIL))
       (setf (slot-value faucet 'file) file))))
+
+(defmethod start ((faucet file-faucet))
+  (setf (file faucet) (file faucet)))
 
 (defclass rotating-file-faucet (file-faucet)
   ((interval :initform NIL :accessor interval)

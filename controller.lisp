@@ -20,6 +20,7 @@
             (thread controller) (thread-continue controller) (length (queue controller)))))
 
 (defmethod start ((controller controller))
+  (call-next-method)
   (setf (thread-continue controller) T)
   (when (thread controller)
     (cerror "Spawn a new thread anyway"
@@ -46,6 +47,7 @@
            (when (< 5 i)
              (bt:destroy-thread thread)
              (return)))
+  (call-next-method)
   controller)
 
 (defmacro with-controller-lock ((&optional (controller '*global-controller*)) &body forms)
