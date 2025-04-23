@@ -52,6 +52,15 @@
   `(bt:with-lock-held ((queue-lock ,controller))
      ,@forms))
 
+(defun process-message-batch (queue pipeline)
+  (with-simple-restart (skip "Skip processing the message batch.")
+    (loop for i from 0
+          for thing across queue
+          do (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
+               (pass pipeline thing))
+             (setf (aref queue i) 0)))
+  (setf (fill-pointer queue) 0))
+
 (defmethod controller-loop ((controller controller))
   (let* ((lock (queue-lock controller))
          (condition (queue-condition controller))
@@ -61,13 +70,7 @@
          (loop do (let ((queue (queue controller)))
                     (rotatef (queue controller) (queue-back controller))
                     (bt:release-lock lock)
-                    (with-simple-restart (skip "Skip processing the message batch.")
-                      (loop for i from 0
-                            for thing across queue
-                            do (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
-                                 (pass pipeline thing))
-                               (setf (aref queue i) 0)))
-                    (setf (fill-pointer queue) 0))
+                    (process-message-batch queue pipeline))
                   (bt:acquire-lock lock)
                   (loop while (= 0 (length (queue controller)))
                         do (bt:condition-wait condition lock :timeout 1))

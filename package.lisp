@@ -31,6 +31,7 @@
    #:add-repl-category
    #:remove-repl-category
    #:output-here
+   #:flush
    #:add-pipe
    #:define-pipe
    #:make-standard-global-controller)

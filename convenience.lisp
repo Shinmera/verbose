@@ -48,6 +48,16 @@
 (defun output-here (&optional (standard-output *standard-output*) (controller *global-controller*))
   (setf (output (find-place controller 'repl-faucet)) standard-output))
 
+(defun flush (&optional (controller *global-controller*))
+  #+thread-support
+  (cond ((null (thread controller)))
+        ((eq (thread controller) (bt:current-thread))
+         (process-message-batch (queue controller) (pipeline controller)))
+        (T
+         (sync controller)))
+  (when (find-place controller 'repl-faucet)
+    (finish-output (output (find-place controller 'repl-faucet)))))
+
 (defun add-pipe (&rest segments)
   (let ((controller (if (typep (first segments) 'controller)
                         (pop segments)
