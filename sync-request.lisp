@@ -17,3 +17,13 @@
       (bt:with-lock-held ((sync-request-lock sync))
         (pass controller sync)
         (bt:condition-wait (sync-request-condition sync) (sync-request-lock sync))))))
+
+(defun flush (&optional (controller *global-controller*))
+  (cond ((null (thread controller)))
+        ((eq (thread controller) (bt:current-thread))
+         (process-message-batch (queue controller) (pipeline controller)))
+        (T
+         (sync controller)))
+  ;; TODO: do this for *all* segments
+  (when (find-place controller 'repl-faucet)
+    (finish-output (output (find-place controller 'repl-faucet)))))

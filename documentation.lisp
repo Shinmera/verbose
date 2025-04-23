@@ -520,7 +520,15 @@ If the controller is not running a thread, this does nothing.
 Otherwise this is achieved by constructing and then passing
 a SYNC-REQUEST instance to the controller.
 
-See SYNC-REQUEST"))
+See SYNC-REQUEST
+See FLUSH")
+
+  (function flush
+    "Similar to SYNC but tries to ensure all messages have been flushed.
+
+Also flushes the streams of all segments.
+
+See SYNC"))
 
 ;; toolkit.lisp
 (docs:define-docs
