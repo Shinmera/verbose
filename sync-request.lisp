@@ -11,7 +11,8 @@
 
 (defun sync (&optional (controller *global-controller*))
   (when (and controller (thread controller)
-             (bt:thread-alive-p (thread controller)))
+             (bt:thread-alive-p (thread controller))
+             (not (eq (thread controller) (bt:current-thread))))
     (let ((sync (make-sync-request)))
       (bt:with-lock-held ((sync-request-lock sync))
         (pass controller sync)
