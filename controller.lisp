@@ -58,9 +58,11 @@
   (with-simple-restart (skip "Skip processing the message batch.")
     (loop for i from 0
           for thing across queue
-          do (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
-               (pass pipeline thing))
-             (setf (aref queue i) 0)))
+          do (unwind-protect
+                  (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
+                    (pass pipeline thing))
+               (maybe-release-message thing)
+               (setf (aref queue i) 0))))
   (setf (fill-pointer queue) 0))
 
 (defmethod controller-loop ((controller controller))
@@ -89,5 +91,6 @@
              (vector-push-extend message (queue controller)))
            (bt:condition-notify (queue-condition controller)))
           (T
-           (pass (pipeline controller) message))))
+           (pass (pipeline controller) message)
+           (maybe-release-message message))))
   NIL)

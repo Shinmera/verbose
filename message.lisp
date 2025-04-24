@@ -2,6 +2,7 @@
 
 (defvar *levels* NIL)
 (defvar *default-message-class* 'message)
+(defvar *pool* NIL)
 
 (declaim (inline log-object))
 (defun log-object (object)
@@ -27,31 +28,52 @@
   (unless (every #'keywordp categories) 
     (cl:error "Categories must be keywords.")))
 
-(defmethod format-message ((stream stream) (message message))
-  (format stream "~a [~5,a] ~{<~a>~}: ~a"
-          (format-time :timestamp (timestamp message))
-          (level message)
-          (categories message)
-          (format-message NIL (content message))))
-
-(defmethod format-message ((null null) message)
-  (princ-to-string message))
-
-(defmethod format-message ((null null) (func function))
-  (princ-to-string (funcall func)))
-
-(defmethod format-message ((null null) (message message))
-  (with-output-to-string (stream)
-    (format-message stream message)))
-
 (defmethod print-object ((message message) stream)
   (print-unreadable-object (message stream :type T)
     (format-message stream message)))
 
+(defmethod format-message ((null null) thing)
+  (with-output-to-string (stream)
+    (format-message stream thing)))
+
+(defmethod format-message ((vector string) thing)
+  (with-output-to-string (stream vector)
+    (format-message stream thing)))
+
+(defmethod format-message ((stream stream) (message message))
+  (format-time :timestamp (timestamp message) :stream stream)
+  (format stream " [~5,a] ~{<~a>~}: "
+          (level message)
+          (categories message))
+  (format-message stream (content message)))
+
+(defmethod format-message ((stream stream) thing)
+  (princ thing stream))
+
+(defmethod format-message (target (func function))
+  (format-message target (funcall func)))
+
+(setf *pool* (make-pool (lambda () (allocate-instance (find-class 'message)))))
+
+(defun maybe-release-message (message)
+  (when (and *pool* (eq (type-of message) 'message))
+    (release-instance *pool* message)))
+
+(defun maybe-draw-message (level categories content class &rest initargs)
+  (if (and *pool* (eq class 'message))
+      (let ((instance (draw-instance *pool*)))
+        (setf (timestamp instance) (get-universal-time))
+        (setf (thread instance) (bt:current-thread))
+        (setf (level instance) level)
+        (setf (categories instance) categories)
+        (setf (content instance) content)
+        instance)
+      (apply #'make-instance class :level level :categories categories :content content initargs)))
+
 (defun log-message (level categories content &optional (class *default-message-class*) &rest initargs)
   (unless (listp categories)
     (setf categories (list categories)))
-  (log-object (apply #'make-instance class :level level :categories categories :content content initargs)))
+  (log-object (apply #'maybe-draw-message level categories content class initargs)))
 
 (defmethod log (level categories (datum string) &rest args)
   (log-message level categories (apply #'format NIL datum args)))

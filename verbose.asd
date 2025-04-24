@@ -1,6 +1,6 @@
 (asdf:defsystem verbose
   :name "Verbose"
-  :version "2.1.0"
+  :version "2.2.0"
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :license "zlib"
   :description "A logging framework using the piping library."
@@ -11,6 +11,7 @@
   :components ((:file "package")
                (:file "toolkit")
                (:file "controller")
+               (:file "pool")
                (:file "message")
                (:file "pipes")
                (:file "convenience")
@@ -21,5 +22,6 @@
                (:file "documentation"))
   :depends-on (:piping
                :bordeaux-threads
+               :atomics
                :dissect
                :documentation-utils))
