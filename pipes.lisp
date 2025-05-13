@@ -165,7 +165,7 @@
            (multiple-value-bind (s m h dd mm yy) (decode-universal-time time)
              (setf (file faucet)
                    (make-pathname :name (format NIL "~4,'0d.~2,'0d.~2,'0d ~2,'0d:~2,'0d:~2,'0d~@[ ~a~]"
-                                                yy mm dd h m s (pathname-name (template faucet)))
+                                                yy mm dd h m s (when (template faucet) (pathname-name (template faucet))))
                                   :defaults (template faucet))))))
     (setf (last-rotation faucet) time)))
 
