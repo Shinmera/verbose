@@ -55,8 +55,10 @@
      ,@forms))
 
 (defun process-message-batch (queue pipeline)
+  (declare (type (and (vector T) (not simple-array)) queue))
+  (declare (optimize speed (safety 1)))
   (with-simple-restart (skip "Skip processing the message batch.")
-    (loop for i from 0
+    (loop for i of-type (unsigned-byte 32) from 0
           for thing across queue
           do (unwind-protect
                   (with-simple-restart (continue "Continue processing messages, skipping ~a" thing)
@@ -83,12 +85,13 @@
       (ignore-errors (bt:release-lock lock)))))
 
 (defmethod pass ((controller controller) message)
-  (let ((thread (thread controller)))
+  (declare (optimize speed (safety 1)))
+  (let ((thread (the bt:thread (thread controller))))
     (cond ((and (not *process-locally*)
                 thread (bt:thread-alive-p thread)
                 (not (eql (bt:current-thread) thread)))
            (with-controller-lock (controller)
-             (vector-push-extend message (queue controller)))
+             (vector-push-extend message (the (vector T) (queue controller))))
            (bt:condition-notify (queue-condition controller)))
           (T
            (pass (pipeline controller) message)
