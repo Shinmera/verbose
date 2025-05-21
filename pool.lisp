@@ -49,8 +49,10 @@
              (when (atomics:cas (pool-index pool) index (1+ index))
                (return (aref instances index))))
             ((= index (length instances))
-             ;; We filled, so we are responsible for resizing it.
-             (resize-pool pool (* 2 index) :lock T))
+             (when (atomics:cas (pool-index pool) index (1+ index))
+               ;; We filled, so we are responsible for resizing it.
+               (resize-pool pool (* 2 index) :lock T)
+               (return (aref instances index))))
             (T
              ;; Re-use the lock as a barrier, then retry
              (bt:with-lock-held ((pool-lock pool)))))))
