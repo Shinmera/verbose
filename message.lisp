@@ -2,7 +2,8 @@
 
 (defvar *levels* NIL)
 (defvar *default-message-class* 'message)
-(defvar *pool* NIL)
+#-sbcl (defvar *pool* NIL)
+#+sbcl (sb-ext:defglobal *pool* NIL)
 
 (declaim (inline log-object))
 (defun log-object (object)

@@ -18,6 +18,20 @@
     (map-into instances constructor)
     (%make-pool instances constructor)))
 
+(defun check-pool (pool)
+  (bt:with-lock-held ((pool-lock pool))
+    (loop with cache = (make-hash-table :test 'eq)
+          for i from 0
+          for instance across (pool-instances pool)
+          for existing = (gethash instance cache)
+          do (cond ((null instance)
+                    (cl:error "Missing entry in ~d" i))
+                   (existing
+                    (cl:error "Duplicate entry in ~d and ~d: ~a" existing i instance))
+                   (T
+                    (setf (gethash instance cache) i))))
+    pool))
+
 (defun clear-pool (pool)
   (bt:with-lock-held ((pool-lock pool))
     ;; The order is no longer guaranteed to be consistent
@@ -41,51 +55,25 @@
         (resize))))
 
 (defun draw-instance (pool)
-  #+atomics-cas-struct-slot
-  (loop
-    (let ((instances (pool-instances pool))
-          (index (pool-index pool)))
-      (cond ((< index (length instances))
-             (when (atomics:cas (pool-index pool) index (1+ index))
-               (return (aref instances index))))
-            ((= index (length instances))
-             (when (atomics:cas (pool-index pool) index (1+ index))
-               ;; We filled, so we are responsible for resizing it.
-               (resize-pool pool (* 2 index) :lock T)
-               (return (aref instances index))))
-            (T
-             ;; Re-use the lock as a barrier, then retry
-             (bt:with-lock-held ((pool-lock pool)))))))
-  #-atomics-cas-struct-slot
+  (declare (type pool pool))
+  (declare (optimize speed))
   (bt:with-lock-held ((pool-lock pool))
     (let ((instances (pool-instances pool))
           (index (pool-index pool)))
+      (declare (type simple-vector instances))
       ;; We filled, so we are responsible for resizing it.
       (loop while (<= (length instances) index)
-            do (resize-pool pool (* 2 index) :lock NIL)
-               (setf instances (pool-instances pool)))
+            do (setf instances (resize-pool pool (* 2 index) :lock NIL)))
       (setf (pool-index pool) (1+ index))
-      (aref instances index))))
+      (shiftf (aref instances index) NIL))))
 
 (defun release-instance (pool instance)
-  #+atomics-cas-struct-slot
-  (loop
-    (let ((index (pool-index pool))
-          (instances (pool-instances pool)))
-      (cond ((= 0 index)
-             ;; What the fuck... (double-release?)
-             (return))
-            ;; FIXME: I don't think this is quite consistent...
-            ((= index (length instances))
-             ;; What the fuck... (how? wait for a resize maybe?)
-             ())
-            ((atomics:cas (pool-index pool) index (1- index))
-             (return (setf (aref instances index) instance))))))
-  #-atomics-cas-struct-slot
+  (declare (type pool pool))
+  (declare (optimize speed))
   (bt:with-lock-held ((pool-lock pool))
     (let ((index (pool-index pool)))
       (cond ((= 0 index)
              (cl:warn "What the fuck?"))
             (T
-             (setf (aref (pool-instances pool) index) instance)
+             (setf (aref (pool-instances pool) (1- index)) instance)
              (setf (pool-index pool) (1- index)))))))
