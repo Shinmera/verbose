@@ -42,7 +42,7 @@
 (defun ansi-term-p ()
   (if (boundp '*ansi-colors*)
       *ansi-colors*
-      (not (find (or (getenv "TERM") "") '("" "dumb" "linux") :test #'string-equal))))
+      (not (find (or (getenv "TERM") "") '("" "dumb" "linux" "emacs") :test #'string-equal))))
 
 (defclass repl-faucet (stream-faucet)
   ((output :initform *standard-output*)
