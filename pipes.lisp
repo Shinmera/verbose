@@ -57,7 +57,8 @@
       (let ((stream (output faucet)))
         (macrolet ((f (color format &rest args)
                      `(progn
-                        ,@(when color `((format stream "~c[38;5;~am" (code-char #x1b) ,color)))
+                        ,@(when color `((let ((c ,color))
+                                           (format stream "~:[~*~*~;~c[38;5;~am~]" c (code-char #x1b) c))))
                         ,(if (stringp format)
                              `(format stream ,format ,@args)
                              `(progn ,format ,@args))
