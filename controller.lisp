@@ -86,7 +86,7 @@
 
 (defmethod pass ((controller controller) message)
   (declare (optimize speed (safety 1)))
-  (let ((thread (the bt:thread (thread controller))))
+  (let ((thread (thread controller)))
     (cond ((and (not *process-locally*)
                 thread (bt:thread-alive-p thread)
                 (not (eql (bt:current-thread) thread)))
