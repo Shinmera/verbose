@@ -4,9 +4,9 @@
   :author "Yukari Hafner <shinmera@tymoon.eu>"
   :license "zlib"
   :description "A logging framework using the piping library."
-  :homepage "https://Shinmera.github.io/verbose/"
-  :bug-tracker "https://github.com/Shinmera/verbose/issues"
-  :source-control (:git "https://github.com/Shinmera/verbose.git")
+  :homepage "https://shinmera.com/docs/verbose/"
+  :bug-tracker "https://shinmera.com/project/verbose/issues"
+  :source-control (:git "https://shinmera.com/project/verbose.git")
   :serial T
   :components ((:file "package")
                (:file "toolkit")
